@@ -12,8 +12,8 @@ public:
     ~PhaserNativeScript();
 
     int evaluateFromFile(const char *path);
-    int evaluateFromFileHandler(FILE *f);
-    int evaluateFromString(const char *scriptUTF8);
+    int evaluateFromFileHandler(FILE *f, const char *sourceURL);
+    int evaluateFromString(const char *scriptUTF8, const char *sourceURL);
 
 private:
     JSContextGroupRef m_contextGroup;

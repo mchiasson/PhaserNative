@@ -48,7 +48,6 @@ int PhaserNativeApp::run(int argc, char* argv[])
 
         if ((rc = m_scriptEngine.evaluateFromFile(javascriptFile)) != 0)
         {
-            SDL_LogError(0, "Could not evaluate %s\n", javascriptFile);
             return rc;
         }
     }

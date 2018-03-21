@@ -4,6 +4,65 @@
 #include <string>
 #include <cassert>
 
+static char* JSStringToCString (JSStringRef string) {
+    size_t size = JSStringGetMaximumUTF8CStringSize(string);
+    char *buffer = (char *)calloc(sizeof(char), size);
+    JSStringGetUTF8CString(string, buffer, size);
+    return buffer;
+}
+
+static char* JSValueToCString (JSContextRef context, JSValueRef value,
+                               JSValueRef *exception)
+{
+    JSStringRef string = JSValueToStringCopy(context, value, exception);
+    char *result = JSStringToCString(string);
+    JSStringRelease(string);
+    return result;
+}
+
+static void dumpException(JSContextRef context, JSValueRef exception) {
+    // description
+    char *description = JSValueToCString(context, exception, NULL);
+    fprintf(stderr, "%s", description);
+    free(description);
+
+    // line
+    JSStringRef lineProperty = JSStringCreateWithUTF8CString("line");
+    JSValueRef lineValue =
+            JSObjectGetProperty(context, (JSObjectRef)exception, lineProperty, NULL);
+    int line = JSValueToNumber(context, lineValue, NULL);
+    fprintf(stderr, " on line %d", line);
+    JSStringRelease(lineProperty);
+
+    // source
+    JSStringRef sourceProperty = JSStringCreateWithUTF8CString("sourceURL");
+    if (JSObjectGetProperty(context, (JSObjectRef)exception, sourceProperty, NULL)) {
+        JSValueRef sourceValue =
+                JSObjectGetProperty(context, (JSObjectRef)exception, sourceProperty, NULL);
+        char *sourceString = JSValueToCString(context, sourceValue, NULL);
+        fprintf(stderr, " in %s", sourceString);
+        free(sourceString);
+    }
+    JSStringRelease(sourceProperty);
+
+    JSStringRef stackProperty = JSStringCreateWithUTF8CString("stack");
+    if (JSObjectGetProperty(context, (JSObjectRef)exception, stackProperty, NULL)) {
+        fprintf(stderr, ":\n");
+        JSValueRef stackValue =
+                JSObjectGetProperty(context, (JSObjectRef)exception, stackProperty, NULL);
+        char *stack = JSValueToCString(context, stackValue, NULL);
+        char *line = strtok(stack, "\n");
+        while (line != NULL) {
+            if (line[0] == '(')
+                fprintf(stderr, "%s\n", line);
+            line = strtok(NULL, "\n");
+        }
+    } else {
+        fprintf(stderr, "\n");
+    }
+    JSStringRelease(stackProperty);
+}
+
 PhaserNativeScript::PhaserNativeScript() :
     m_contextGroup(JSContextGroupCreate()),
     m_globalContext(JSGlobalContextCreateInGroup(m_contextGroup, nullptr))
@@ -32,14 +91,14 @@ int PhaserNativeScript::evaluateFromFile(const char *path)
         return -1;
     }
 
-    retval = evaluateFromFileHandler(f);
+    retval = evaluateFromFileHandler(f, path);
 
     fclose(f);
     return retval;
 
 }
 
-int PhaserNativeScript::evaluateFromFileHandler(FILE *f)
+int PhaserNativeScript::evaluateFromFileHandler(FILE *f, const char *sourceURL)
 {
     char* buffer;
 
@@ -57,7 +116,7 @@ int PhaserNativeScript::evaluateFromFileHandler(FILE *f)
         assert(buffer_size < buffer_capacity);
     }
 
-    int retval = evaluateFromString(buffer);
+    int retval = evaluateFromString(buffer, sourceURL);
 
     if (buffer) {
         free(buffer);
@@ -67,25 +126,23 @@ int PhaserNativeScript::evaluateFromFileHandler(FILE *f)
     return retval;
 }
 
-int PhaserNativeScript::evaluateFromString(const char *scriptUTF8)
+int PhaserNativeScript::evaluateFromString(const char *scriptUTF8, const char *sourceURL)
 {
 
     JSStringRef script = JSStringCreateWithUTF8CString(scriptUTF8);
+    JSStringRef source = JSStringCreateWithUTF8CString(sourceURL);
     JSValueRef exception;
-    JSValueRef ret = JSEvaluateScript(m_globalContext, script, nullptr, nullptr, 1, &exception);
+    JSValueRef ret = JSEvaluateScript(m_globalContext, script, nullptr, source, 1, &exception);
     JSStringRelease(script);
+    JSStringRelease(source);
 
     if (ret == nullptr)
     {
-        JSStringRef exceptionString = JSValueToStringCopy(m_globalContext, exception, NULL);
-
-        size_t jsSize = JSStringGetMaximumUTF8CStringSize(exceptionString);
-        char jsBuffer[jsSize];
-        JSStringGetUTF8CString(exceptionString, jsBuffer, jsSize);
-        SDL_LogError(0, "%s\n", jsBuffer);
-        JSStringRelease(exceptionString);
+        dumpException(m_globalContext, exception);
         return -1;
     }
 
     return 0;
 }
+
+
