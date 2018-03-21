@@ -44,11 +44,11 @@ int PhaserNativeApp::run(int argc, char* argv[])
 
     for(auto javascriptFile : javascriptFiles) {
 
-        SDL_LogInfo(0, "Compiling %s...\n", javascriptFile);
+        SDL_LogInfo(0, "Evaluating %s...\n", javascriptFile);
 
         if ((rc = m_scriptEngine.evaluateFromFile(javascriptFile)) != 0)
         {
-            SDL_LogError(0, "Could not compile %s\n", javascriptFile);
+            SDL_LogError(0, "Could not evaluate %s\n", javascriptFile);
             return rc;
         }
     }

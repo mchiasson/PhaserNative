@@ -32,10 +32,7 @@ int PhaserNativeScript::evaluateFromFile(const char *path)
         return -1;
     }
 
-    if ((retval = evaluateFromFileHandler(f)) != 0)
-    {
-        SDL_LogError(0, "Failed to evaluate: %s\n", path);
-    }
+    retval = evaluateFromFileHandler(f);
 
     fclose(f);
     return retval;
