@@ -4,6 +4,7 @@
 #include <JavaScriptCore/JavaScript.h>
 
 #include <cstdio>
+#include <string>
 
 class PhaserNativeScript
 {
@@ -13,7 +14,7 @@ public:
 
     int evaluateFromFile(const char *path);
     int evaluateFromFileHandler(FILE *f, const char *sourceURL);
-    int evaluateFromString(const char *scriptUTF8, const char *sourceURL);
+    int evaluateFromString(const std::string &scriptUTF8, const char *sourceURL);
 
 private:
     JSContextGroupRef m_contextGroup;

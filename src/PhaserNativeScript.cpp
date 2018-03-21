@@ -1,7 +1,6 @@
 #include "PhaserNativeScript.h"
 
 #include <SDL2/SDL_log.h>
-#include <string>
 #include <cassert>
 
 static char* JSStringToCString (JSStringRef string) {
@@ -20,45 +19,44 @@ static char* JSValueToCString (JSContextRef context, JSValueRef value,
     return result;
 }
 
-static void dumpException(JSContextRef context, JSValueRef exception) {
-    // description
-    char *description = JSValueToCString(context, exception, NULL);
-    fprintf(stderr, "%s", description);
-    free(description);
-
+static void dumpException(JSContextRef context, JSValueRef exception)
+{
     // line
     JSStringRef lineProperty = JSStringCreateWithUTF8CString("line");
-    JSValueRef lineValue =
-            JSObjectGetProperty(context, (JSObjectRef)exception, lineProperty, NULL);
+    JSValueRef lineValue = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), lineProperty, NULL);
     int line = JSValueToNumber(context, lineValue, NULL);
-    fprintf(stderr, " on line %d", line);
     JSStringRelease(lineProperty);
 
     // source
     JSStringRef sourceProperty = JSStringCreateWithUTF8CString("sourceURL");
-    if (JSObjectGetProperty(context, (JSObjectRef)exception, sourceProperty, NULL)) {
-        JSValueRef sourceValue =
-                JSObjectGetProperty(context, (JSObjectRef)exception, sourceProperty, NULL);
+    JSValueRef sourceValue = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), sourceProperty, NULL);
+    if (sourceValue)
+    {
         char *sourceString = JSValueToCString(context, sourceValue, NULL);
-        fprintf(stderr, " in %s", sourceString);
+        fprintf(stderr, "%s:%d\n", sourceString, line);
         free(sourceString);
     }
     JSStringRelease(sourceProperty);
 
+    // description
+    char *description = JSValueToCString(context, exception, NULL);
+    fprintf(stderr, "%s\n", description);
+    free(description);
+
     JSStringRef stackProperty = JSStringCreateWithUTF8CString("stack");
-    if (JSObjectGetProperty(context, (JSObjectRef)exception, stackProperty, NULL)) {
-        fprintf(stderr, ":\n");
-        JSValueRef stackValue =
-                JSObjectGetProperty(context, (JSObjectRef)exception, stackProperty, NULL);
+    JSValueRef stackValue = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), stackProperty, NULL);
+    if (stackValue)
+    {
         char *stack = JSValueToCString(context, stackValue, NULL);
         char *line = strtok(stack, "\n");
-        while (line != NULL) {
+        while (line != NULL)
+        {
             if (line[0] == '(')
+            {
                 fprintf(stderr, "%s\n", line);
+            }
             line = strtok(NULL, "\n");
         }
-    } else {
-        fprintf(stderr, "\n");
     }
     JSStringRelease(stackProperty);
 }
@@ -100,43 +98,69 @@ int PhaserNativeScript::evaluateFromFile(const char *path)
 
 int PhaserNativeScript::evaluateFromFileHandler(FILE *f, const char *sourceURL)
 {
-    char* buffer;
+    char *buf = NULL;
+    size_t bufsz;
+    size_t bufoff;
+    size_t got;
+    int retval = 0;
 
-    size_t buffer_size = 0;
-    size_t buffer_capacity = 1024;
-    buffer = (char*)malloc(buffer_capacity);
+    buf = (char *) malloc(1024);
+    if (!buf) {
+        SDL_LogError(0, "Out of memory.\n");
+        goto cleanup;
+    }
+    bufsz = 1024;
+    bufoff = 0;
 
-    while (!feof(f) && !ferror(f)) {
-        buffer_size += fread(buffer + buffer_size, 1, buffer_capacity - buffer_size, f);
-        if (buffer_size == buffer_capacity) { // guarantees space for trailing '\0'
-            buffer_capacity *= 2;
-            buffer = (char*)realloc(buffer, buffer_capacity);
+    /* Read until EOF, avoid fseek/stat because it won't work with stdin. */
+    for (;;) {
+        size_t avail;
+
+        avail = bufsz - bufoff;
+        if (avail < 1024) {
+            size_t newsz;
+            char *buf_new;
+            newsz = bufsz + (bufsz >> 2) + 1024;  /* +25% and some extra */
+            buf_new = (char *) realloc(buf, newsz);
+            if (!buf_new) {
+                SDL_LogError(0, "Out of memory.\n");
+                goto cleanup;
+            }
+            buf = buf_new;
+            bufsz = newsz;
         }
 
-        assert(buffer_size < buffer_capacity);
+        avail = bufsz - bufoff;
+
+        got = fread((void *) (buf + bufoff), (size_t) 1, avail, f);
+        if (got == 0) {
+            break;
+        }
+        bufoff += got;
     }
 
-    int retval = evaluateFromString(buffer, sourceURL);
 
-    if (buffer) {
-        free(buffer);
-        buffer = nullptr;
+    retval = evaluateFromString(std::string(buf, bufoff), sourceURL);
+
+cleanup:
+    if (buf) {
+        free(buf);
+        buf = NULL;
     }
-
     return retval;
 }
 
-int PhaserNativeScript::evaluateFromString(const char *scriptUTF8, const char *sourceURL)
+int PhaserNativeScript::evaluateFromString(const std::string &scriptUTF8, const char *sourceURL)
 {
 
-    JSStringRef script = JSStringCreateWithUTF8CString(scriptUTF8);
+    JSStringRef script = JSStringCreateWithUTF8CString(scriptUTF8.c_str());
     JSStringRef source = JSStringCreateWithUTF8CString(sourceURL);
-    JSValueRef exception;
-    JSValueRef ret = JSEvaluateScript(m_globalContext, script, nullptr, source, 1, &exception);
+    JSValueRef exception = nullptr;
+    JSEvaluateScript(m_globalContext, script, nullptr, source, 1, &exception);
     JSStringRelease(script);
     JSStringRelease(source);
 
-    if (ret == nullptr)
+    if (exception)
     {
         dumpException(m_globalContext, exception);
         return -1;
