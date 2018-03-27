@@ -42,6 +42,8 @@ int PhaserNativeApp::run(int argc, char* argv[])
         return -1;
     }
 
+    m_scriptEngine.registerAllBindings();
+
     for(auto javascriptFile : javascriptFiles) {
 
         SDL_LogInfo(0, "Evaluating %s...\n", javascriptFile);

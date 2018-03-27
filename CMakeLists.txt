@@ -19,6 +19,9 @@ find_package(JavaScriptCore REQUIRED)
 hunter_add_package(SDL2)
 find_package(SDL2 CONFIG REQUIRED)
 
+hunter_add_package(Boost)
+find_package(Boost CONFIG REQUIRED)
+
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/PhaserNativeApp.cpp
@@ -27,18 +30,30 @@ add_executable(${PROJECT_NAME}
     src/PhaserNativeScript.h
     src/PhaserNativeWindow.h
     src/PhaserNativeWindow.cpp
+
+    ### JavaScriptCore Helpers
+    src/JSC/JSCConsole.cpp
+    src/JSC/JSCException.cpp
+    src/JSC/JSCException.h
+    src/JSC/JSCHelpers.cpp
+    src/JSC/JSCHelpers.h
+    src/JSC/JSCObject.cpp
+    src/JSC/JSCObject.h
+    src/JSC/JSCString.h
+    src/JSC/JSCValue.cpp
+    src/JSC/JSCValue.h
 )
 
 message("JavaScriptCore_INCLUDE_DIRS=${JavaScriptCore_INCLUDE_DIRS}")
 target_include_directories(${PROJECT_NAME} PRIVATE
     src/
-    src/SDL2
     ${JavaScriptCore_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${JavaScriptCore_LIBRARIES}
     SDL2::SDL2
+    Boost::boost
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE

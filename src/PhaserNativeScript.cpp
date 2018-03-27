@@ -3,74 +3,15 @@
 #include <SDL2/SDL_log.h>
 #include <cassert>
 
-static char* JSStringToCString (JSStringRef string) {
-    size_t size = JSStringGetMaximumUTF8CStringSize(string);
-    char *buffer = (char *)calloc(sizeof(char), size);
-    JSStringGetUTF8CString(string, buffer, size);
-    return buffer;
-}
+#include "JSC/JSCHelpers.h"
 
-static char* JSValueToCString (JSContextRef context, JSValueRef value,
-                               JSValueRef *exception)
-{
-    JSStringRef string = JSValueToStringCopy(context, value, exception);
-    char *result = JSStringToCString(string);
-    JSStringRelease(string);
-    return result;
-}
-
-static void dumpException(JSContextRef context, JSValueRef exception)
-{
-    // line
-    JSStringRef lineProperty = JSStringCreateWithUTF8CString("line");
-    JSValueRef lineValue = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), lineProperty, NULL);
-    int line = JSValueToNumber(context, lineValue, NULL);
-    JSStringRelease(lineProperty);
-
-    // source
-    JSStringRef sourceProperty = JSStringCreateWithUTF8CString("sourceURL");
-    JSValueRef sourceValue = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), sourceProperty, NULL);
-    if (sourceValue)
-    {
-        char *sourceString = JSValueToCString(context, sourceValue, NULL);
-        fprintf(stderr, "%s:%d\n", sourceString, line);
-        free(sourceString);
-    }
-    JSStringRelease(sourceProperty);
-
-    // description
-    char *description = JSValueToCString(context, exception, NULL);
-    fprintf(stderr, "%s\n", description);
-    free(description);
-
-    JSStringRef stackProperty = JSStringCreateWithUTF8CString("stack");
-    JSValueRef stackValue = JSObjectGetProperty(context, JSValueToObject(context, exception, NULL), stackProperty, NULL);
-    if (stackValue)
-    {
-        char *stack = JSValueToCString(context, stackValue, NULL);
-        char *line = strtok(stack, "\n");
-        while (line != NULL)
-        {
-            if (line[0] == '(')
-            {
-                fprintf(stderr, "%s\n", line);
-            }
-            line = strtok(NULL, "\n");
-        }
-    }
-    JSStringRelease(stackProperty);
-}
-
-PhaserNativeScript::PhaserNativeScript() :
-    m_contextGroup(JSContextGroupCreate()),
-    m_globalContext(JSGlobalContextCreateInGroup(m_contextGroup, nullptr))
+PhaserNativeScript::PhaserNativeScript()
 {
 }
 
 PhaserNativeScript::~PhaserNativeScript()
 {
-    JSGlobalContextRelease(m_globalContext);
-    JSContextGroupRelease(m_contextGroup);
+    JSGlobalContextRelease(JSC::globalContext());
 }
 
 int PhaserNativeScript::evaluateFromFile(const char *path)
@@ -150,23 +91,20 @@ cleanup:
     return retval;
 }
 
-int PhaserNativeScript::evaluateFromString(const std::string &scriptUTF8, const char *sourceURL)
+int PhaserNativeScript::evaluateFromString(const std::string &script, const char *sourceURL)
 {
-
-    JSStringRef script = JSStringCreateWithUTF8CString(scriptUTF8.c_str());
-    JSStringRef source = JSStringCreateWithUTF8CString(sourceURL);
-    JSValueRef exception = nullptr;
-    JSEvaluateScript(m_globalContext, script, nullptr, source, 1, &exception);
-    JSStringRelease(script);
-    JSStringRelease(source);
-
-    if (exception)
-    {
-        dumpException(m_globalContext, exception);
-        return -1;
-    }
+    JSC::evaluateScript(JSC::globalContext(), script, sourceURL);
 
     return 0;
 }
 
+void PhaserNativeScript::registerAllBindings()
+{
+    for (size_t i = 0; i < JSC::bindings().size(); ++i) {
+        JSC::bindings()[i]();
+    }
+
+    JSC::bindings().clear();
+    JSC::bindings().resize(0);
+}
 

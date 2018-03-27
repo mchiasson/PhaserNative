@@ -16,9 +16,7 @@ public:
     int evaluateFromFileHandler(FILE *f, const char *sourceURL);
     int evaluateFromString(const std::string &scriptUTF8, const char *sourceURL);
 
-private:
-    JSContextGroupRef m_contextGroup;
-    JSGlobalContextRef m_globalContext;
+    void registerAllBindings();
 };
 
 #endif // PHASERNATIVESCRIPT_H
