@@ -60,20 +60,6 @@ private:
 
 };
 
-namespace ExceptionHandling
-{
-
-struct ExtractedError
-{
-    std::string message;
-    std::string stack;
-};
-
-typedef ExtractedError(*PlatformErrorExtractor)(const std::exception &ex, const char *context);
-extern PlatformErrorExtractor platformErrorExtractor;
-
-}
-
 }
 
 

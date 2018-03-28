@@ -67,9 +67,4 @@ void Exception::buildMessage(JSContextRef ctx, JSValueRef exn, const JSC::String
     }
 }
 
-namespace ExceptionHandling
-{
-PlatformErrorExtractor platformErrorExtractor;
-}
-
 }

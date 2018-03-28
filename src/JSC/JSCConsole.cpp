@@ -16,11 +16,11 @@ JSC_BINDINGS(JSCConsole)
                   }
                   SDL_Log("%s\n", output.c_str());
               } catch(const std::exception & e) {
-                  JSC::Value message(ctx, JSC::String(ctx, e.what()));
+                  JSC::Value message = JSC::Value::MakeString(ctx, e.what());
                   JSValueRef args[] { message, nullptr };
                   *exception = JSObjectMakeError(ctx, 1, args, nullptr);
               }
-              return JSValueMakeUndefined(ctx);
+              return JSC::Value::MakeUndefined(ctx);
           }, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "info", [](JSContextRef ctx, JSObjectRef /*function*/, JSObjectRef /*thiz*/, size_t argc, const JSValueRef argv[], JSValueRef* exception) -> JSValueRef {
               try {
@@ -31,11 +31,11 @@ JSC_BINDINGS(JSCConsole)
                   }
                   SDL_LogInfo(0, "%s\n", output.c_str());
               } catch(const std::exception & e) {
-                  JSC::Value message(ctx, JSC::String(ctx, e.what()));
+                  JSC::Value message = JSC::Value::MakeString(ctx, e.what());
                   JSValueRef args[] { message, nullptr };
                   *exception = JSObjectMakeError(ctx, 1, args, nullptr);
               }
-              return JSValueMakeUndefined(ctx);
+              return JSC::Value::MakeUndefined(ctx);
           }, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "warn", [](JSContextRef ctx, JSObjectRef /*function*/, JSObjectRef /*thiz*/, size_t argc, const JSValueRef argv[], JSValueRef* exception) -> JSValueRef {
               try {
@@ -46,11 +46,11 @@ JSC_BINDINGS(JSCConsole)
                   }
                   SDL_LogWarn(0, "%s\n", output.c_str());
               } catch(const std::exception & e) {
-                  JSC::Value message(ctx, JSC::String(ctx, e.what()));
+                  JSC::Value message = JSC::Value::MakeString(ctx, e.what());
                   JSValueRef args[] { message, nullptr };
                   *exception = JSObjectMakeError(ctx, 1, args, nullptr);
               }
-              return JSValueMakeUndefined(ctx);
+              return JSC::Value::MakeUndefined(ctx);
           }, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "error", [](JSContextRef ctx, JSObjectRef /*function*/, JSObjectRef /*thiz*/, size_t argc, const JSValueRef argv[], JSValueRef* exception) -> JSValueRef {
               try {
@@ -61,11 +61,11 @@ JSC_BINDINGS(JSCConsole)
                   }
                   SDL_LogError(0, "%s\n", output.c_str());
               } catch(const std::exception & e) {
-                  JSC::Value message(ctx, JSC::String(ctx, e.what()));
+                  JSC::Value message = JSC::Value::MakeString(ctx, e.what());
                   JSValueRef args[] { message, nullptr };
                   *exception = JSObjectMakeError(ctx, 1, args, nullptr);
               }
-              return JSValueMakeUndefined(ctx);
+              return JSC::Value::MakeUndefined(ctx);
           }, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { 0, 0, 0 }
     };

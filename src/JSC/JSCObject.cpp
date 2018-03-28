@@ -30,7 +30,7 @@ Object Object::MakeDate(JSContextRef ctx, TimeType time)
 
     JSValueRef arguments[] =
     {
-        JSValueMakeNumber(ctx, duration_cast<milliseconds>(time.time_since_epoch()).count())
+        JSC::Value::MakeNumber(ctx, duration_cast<milliseconds>(time.time_since_epoch()).count())
     };
 
     JSValueRef exn;
