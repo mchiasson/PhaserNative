@@ -1,18 +1,10 @@
 #include "PhaserNativeApp.h"
+#include "PhaserNativeEvent.h"
 #include "PhaserNativeWindow.h"
 
 PhaserNativeApp::PhaserNativeApp()
 {
-#ifndef NDEBUG
-    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_VERBOSE);
-#endif
-
-    int rc = 0;
-    if((rc = SDL_Init( SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER)) < 0 )
-    {
-        SDL_LogError(0, "SDL could not initialize: %s\n", SDL_GetError() );
-        throw rc;
-    }
+    PhaserNativeEvent::Timeout = SDL_RegisterEvents(1);
 }
 
 PhaserNativeApp::~PhaserNativeApp()
@@ -56,5 +48,133 @@ int PhaserNativeApp::run(int argc, char* argv[])
 
     m_running = true;
 
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(renderFrame, 0, 1);
+#else
+    while(m_running)
+    {
+        renderFrame();
+    }
+#endif
+
+
     return rc;
+}
+
+void PhaserNativeApp::renderFrame()
+{
+    processEvent();
+
+    m_window.render();
+}
+
+void PhaserNativeApp::processEvent()
+{
+    SDL_Event e;
+
+    while( SDL_PollEvent( &e ) != 0 )
+    {
+        switch(e.type)
+        {
+        case SDL_KEYUP:
+            break;
+        case SDL_KEYDOWN:
+            break;
+        case SDL_MOUSEBUTTONUP:
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            break;
+        case SDL_MOUSEMOTION:
+            break;
+        case SDL_MOUSEWHEEL:
+            break;
+        case SDL_FINGERUP:
+            break;
+        case SDL_FINGERDOWN:
+            break;
+        case SDL_FINGERMOTION:
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+            break;
+        case SDL_CONTROLLERBUTTONUP:
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+            if(SDL_IsGameController(e.cdevice.which))
+            {
+                GameDevice device;
+                device.gameController = SDL_GameControllerOpen(e.cdevice.which);
+                if (device.gameController)
+                {
+                    device.joystickID = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(device.gameController));
+                    m_gameDevices.push_back(device);
+                }
+            }
+            break;
+        case SDL_CONTROLLERDEVICEREMOVED:
+        {
+            auto it = m_gameDevices.begin();
+            auto end = m_gameDevices.end();
+            while(it != end)
+            {
+                if ((*it).joystickID == e.cdevice.which)
+                {
+                    SDL_GameControllerClose((*it).gameController);
+                    m_gameDevices.erase(it);
+                    break;
+                }
+                ++it;
+            }
+
+            break;
+        }
+        case SDL_WINDOWEVENT:
+            switch (e.window.event)
+            {
+            case SDL_WINDOWEVENT_MOVED:
+            {
+                break;
+            }
+            case SDL_WINDOWEVENT_SIZE_CHANGED:
+            {
+                break;
+            }
+            case SDL_WINDOWEVENT_CLOSE:
+            {
+                m_running = false;
+                break;
+            }
+            default:
+                break;
+            }
+
+            break;
+        case SDL_QUIT:
+            m_running = false;
+            break;
+        default:
+            /* USER EVENTS SECTION */
+            if (e.type == PhaserNativeEvent::Timeout) {
+
+                bool oneshot = e.user.code > 0;
+                int timer_id = static_cast<int>(reinterpret_cast<intptr_t>(e.user.data2));
+
+                if (oneshot) {
+                    auto it = PhaserNativeEvent::Timers.begin();
+                    auto end = PhaserNativeEvent::Timers.end();
+                    while (it != end) {
+                        SDL_Event *timer = *it;
+                        if (timer->user.data2 == e.user.data2) {
+                            delete timer;
+                            PhaserNativeEvent::Timers.erase(it);
+                            break;
+                        }
+                        ++it;
+                    }
+                }
+            }
+            break;
+        }
+    }
 }

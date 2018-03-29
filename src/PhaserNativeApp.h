@@ -5,6 +5,7 @@
 
 #include <SDL2/SDL_gamecontroller.h>
 #include <PhaserNativeScript.h>
+#include <PhaserNativeWindow.h>
 
 class PhaserNativeApp
 {
@@ -24,11 +25,17 @@ public:
 
 private:
 
+    void renderFrame();
+    void processEvent();
+
     PhaserNativeScript m_scriptEngine;
+    PhaserNativeWindow m_window;
 
     std::vector<const char *> javascriptFiles;
     bool m_running = false;
     std::vector<GameDevice> m_gameDevices;
+
+
 };
 
 #endif // PHASERNATIVEAPP_H

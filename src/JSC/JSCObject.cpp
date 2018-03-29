@@ -7,9 +7,9 @@
 namespace JSC
 {
 
-Object Object::Make(JSContextRef ctx)
+Object Object::Make(JSContextRef ctx, JSClassRef jsClass, void* data)
 {
-    return Object(ctx, JSObjectMake(ctx, nullptr, nullptr));
+    return Object(ctx, JSObjectMake(ctx, jsClass, data));
 }
 
 Object Object::MakeArray(JSContextRef ctx, JSValueRef* elements, unsigned length)

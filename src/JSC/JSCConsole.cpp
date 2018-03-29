@@ -1,5 +1,3 @@
-#include <cstdarg>
-
 #include <SDL2/SDL_log.h>
 
 #include "JSCHelpers.h"
@@ -77,10 +75,11 @@ JSC_BINDINGS(JSCConsole)
     JSClassRef console_class = JSClassCreate(&classDefinition);
 
     auto ctx = JSC::globalContext();
+    JSC::String propertyName = JSC::String(ctx, "console");
     JSObjectSetProperty(ctx,
                         JSContextGetGlobalObject(ctx),
-                        JSStringCreateWithUTF8CString("console"),
-                        JSObjectMake(ctx, console_class, nullptr),
+                        propertyName,
+                        JSC::Object::Make(ctx, console_class),
                         kJSPropertyAttributeNone, nullptr);
 
 }

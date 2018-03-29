@@ -24,12 +24,19 @@ find_package(Boost CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/PhaserGL.c
+    src/PhaserGL.h
     src/PhaserNativeApp.cpp
     src/PhaserNativeApp.h
+    src/PhaserNativeEvent.cpp
+    src/PhaserNativeEvent.h
     src/PhaserNativeScript.cpp
     src/PhaserNativeScript.h
     src/PhaserNativeWindow.h
     src/PhaserNativeWindow.cpp
+
+    ### Khronos
+    src/KHR/khrplatform.h
 
     ### JavaScriptCore Helpers
     src/JSC/JSCConsole.cpp
@@ -40,11 +47,23 @@ add_executable(${PROJECT_NAME}
     src/JSC/JSCObject.cpp
     src/JSC/JSCObject.h
     src/JSC/JSCString.h
+    src/JSC/JSCTimer.cpp
     src/JSC/JSCValue.cpp
     src/JSC/JSCValue.h
+
+    ### NanoVG
+    src/nanovg/fontstash.h
+    src/nanovg/nanovg.c
+    src/nanovg/nanovg_gl.h
+    src/nanovg/nanovg_gl_utils.h
+    src/nanovg/nanovg.h
+    src/nanovg/perf.c
+    src/nanovg/perf.h
+    src/nanovg/stb_image.h
+    src/nanovg/stb_truetype.h
+
 )
 
-message("JavaScriptCore_INCLUDE_DIRS=${JavaScriptCore_INCLUDE_DIRS}")
 target_include_directories(${PROJECT_NAME} PRIVATE
     src/
     ${JavaScriptCore_INCLUDE_DIRS}
@@ -59,3 +78,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 )
+
+configure_file(${PROJECT_SOURCE_DIR}/entypo.ttf ${PROJECT_BINARY_DIR}/entypo.ttf COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/NotoEmoji-Regular.ttf ${PROJECT_BINARY_DIR}/NotoEmoji-Regular.ttf COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/Roboto-Bold.ttf ${PROJECT_BINARY_DIR}/Roboto-Bold.ttf COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/Roboto-Light.ttf ${PROJECT_BINARY_DIR}/Roboto-Light.ttf COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/Roboto-Regular.ttf ${PROJECT_BINARY_DIR}/Roboto-Regular.ttf COPYONLY)
