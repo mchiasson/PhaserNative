@@ -1,8 +1,10 @@
+#pragma once
+
 #include <SDL2/SDL_log.h>
 
-#include "JSCHelpers.h"
+#include "JSC/JSCHelpers.h"
 
-JSC_BINDINGS(JSCConsole)
+JSC_BINDINGS(Console)
 {
     static JSStaticFunction staticFunctions[] = {
         { "log", [](JSContextRef ctx, JSObjectRef /*function*/, JSObjectRef /*thiz*/, size_t argc, const JSValueRef argv[], JSValueRef* exception) -> JSValueRef {
@@ -80,6 +82,6 @@ JSC_BINDINGS(JSCConsole)
                         JSContextGetGlobalObject(ctx),
                         propertyName,
                         JSC::Object::Make(ctx, console_class),
-                        kJSPropertyAttributeNone, nullptr);
+                        kJSPropertyAttributeDontDelete, nullptr);
 
 }

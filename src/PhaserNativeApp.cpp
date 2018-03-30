@@ -36,13 +36,13 @@ int PhaserNativeApp::run(int argc, char* argv[])
         return -1;
     }
 
-    m_scriptEngine.registerAllBindings();
+    JSC::registerAllBindings();
 
     for(auto javascriptFile : javascriptFiles) {
 
         SDL_LogInfo(0, "Evaluating %s...\n", javascriptFile);
 
-        if ((rc = m_scriptEngine.evaluateFromFile(javascriptFile)) != 0)
+        if ((rc = JSC::evaluateFromFile(javascriptFile)) != 0)
         {
             return rc;
         }

@@ -32,16 +32,27 @@ add_executable(${PROJECT_NAME}
     src/PhaserNativeEvent.h
     src/PhaserNativePerfGraph.cpp
     src/PhaserNativePerfGraph.h
-    src/PhaserNativeScript.cpp
-    src/PhaserNativeScript.h
     src/PhaserNativeWindow.h
     src/PhaserNativeWindow.cpp
+
+    ### Javascript Bindings
+    src/bindings/Bindings.cpp
+    src/bindings/Console.h
+    src/bindings/Document.h
+    src/bindings/Image.h
+    src/bindings/Navigator.h
+    src/bindings/Phaser.h
+    src/bindings/Timer.h
+    src/bindings/Window.h
 
     ### Khronos
     src/KHR/khrplatform.h
 
+    ### stb
+    src/stb/stb_image.h
+    src/stb/stb_truetype.h
+
     ### JavaScriptCore Helpers
-    src/JSC/JSCConsole.cpp
     src/JSC/JSCException.cpp
     src/JSC/JSCException.h
     src/JSC/JSCHelpers.cpp
@@ -49,7 +60,6 @@ add_executable(${PROJECT_NAME}
     src/JSC/JSCObject.cpp
     src/JSC/JSCObject.h
     src/JSC/JSCString.h
-    src/JSC/JSCTimer.cpp
     src/JSC/JSCValue.cpp
     src/JSC/JSCValue.h
 
@@ -59,9 +69,6 @@ add_executable(${PROJECT_NAME}
     src/nanovg/nanovg_gl.h
     src/nanovg/nanovg_gl_utils.h
     src/nanovg/nanovg.h
-    src/nanovg/stb_image.h
-    src/nanovg/stb_truetype.h
-
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -79,6 +86,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 )
 
+configure_file(${PROJECT_SOURCE_DIR}/phaser.js ${PROJECT_BINARY_DIR}/phaser.js COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/entypo.ttf ${PROJECT_BINARY_DIR}/entypo.ttf COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/NotoEmoji-Regular.ttf ${PROJECT_BINARY_DIR}/NotoEmoji-Regular.ttf COPYONLY)
 configure_file(${PROJECT_SOURCE_DIR}/Roboto-Bold.ttf ${PROJECT_BINARY_DIR}/Roboto-Bold.ttf COPYONLY)
