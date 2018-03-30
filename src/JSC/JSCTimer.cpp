@@ -19,14 +19,14 @@ JSC_BINDINGS(JSCTimer)
                     JSC::Value oneshotVal  = JSC::Value(ctx, argv[2]);
 
                     unsigned int delay = delayVal.toInteger();
-                    if (delay < 1) {
-                        delay = 1;
-                    }
+                    bool oneshot = oneshotVal.toBoolean();
 
-                    SDL_Event *event;
-                    SDL_memset(&event, 0, sizeof(SDL_Event));
+                    if (delay < 1) { delay = 1; }
+
+                    SDL_Event *event = new SDL_Event();
+                    SDL_memset(event, 0, sizeof(SDL_Event));
                     event->type = PhaserNativeEvent::Timeout;
-                    event->user.code = oneshotVal.toInteger();
+                    event->user.code = oneshot ? 1 : 0;
 
                     PhaserNativeEvent::Timers.push_back(event);
 
@@ -95,7 +95,7 @@ JSC_BINDINGS(JSCTimer)
 "        } else {\n"
 "            cb_func = func;\n"
 "        }\n"
-"        timer_id = __createTimer(cb_func, delay, true /*oneshot*/);\n"
+"        timer_id = __createTimer(cb_func, delay, true);\n"
 "        return timer_id;\n"
 "    }\n"
 "    function clearTimeout(timer_id) {\n"
@@ -121,12 +121,12 @@ JSC_BINDINGS(JSCTimer)
 "            throw new TypeError('callback is not a function/string');\n"
 "        } else if (arguments.length > 2) {\n"
 "            bind_args = Array.prototype.slice.call(arguments, 2);\n"
-"            bind_args.unshift(this);  // [ global(this), arg1, arg2, ... ]\n"
+"            bind_args.unshift(this);\n"
 "            cb_func = func.bind.apply(func, bind_args);\n"
 "        } else {\n"
 "            cb_func = func;\n"
 "        }\n"
-"        timer_id = __createTimer(cb_func, delay, false /*oneshot*/);\n"
+"        timer_id = __createTimer(cb_func, delay, false);\n"
 "        return timer_id;\n"
 "    }\n"
 "    function clearInterval(timer_id) {\n"

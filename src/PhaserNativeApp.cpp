@@ -2,6 +2,8 @@
 #include "PhaserNativeEvent.h"
 #include "PhaserNativeWindow.h"
 
+#include "JSC/JSCHelpers.h"
+
 PhaserNativeApp::PhaserNativeApp()
 {
     PhaserNativeEvent::Timeout = SDL_RegisterEvents(1);
@@ -158,7 +160,13 @@ void PhaserNativeApp::processEvent()
             if (e.type == PhaserNativeEvent::Timeout) {
 
                 bool oneshot = e.user.code > 0;
-                int timer_id = static_cast<int>(reinterpret_cast<intptr_t>(e.user.data2));
+                //int timer_id = static_cast<int>(reinterpret_cast<intptr_t>(e.user.data2));
+
+                JSObjectRef callbackObject = reinterpret_cast<JSObjectRef>(e.user.data1);
+                if (JSObjectIsFunction(JSC::globalContext(), callbackObject))
+                {
+                    JSObjectCallAsFunction(JSC::globalContext(), callbackObject, JSContextGetGlobalObject(JSC::globalContext()), 0, nullptr, nullptr);
+                }
 
                 if (oneshot) {
                     auto it = PhaserNativeEvent::Timers.begin();

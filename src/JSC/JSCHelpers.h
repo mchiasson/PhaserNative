@@ -1,7 +1,5 @@
 #pragma once
 
-#include <JavaScriptCore/JavaScript.h>
-
 #include "JSCValue.h"
 
 #define JSC_STRIGNIFY(a) _JSC_STRIGNIFY(a)
