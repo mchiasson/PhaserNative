@@ -6,7 +6,7 @@
 #include <SDL2/SDL.h>
 #include <nanovg/nanovg.h>
 
-#include "nanovg/perf.h"
+#include "PhaserNativePerfGraph.h"
 
 class PhaserNativeWindow
 {
@@ -24,10 +24,11 @@ private:
 
     NVGcontext* vg = nullptr;
     GPUtimer gpuTimer = {};
-    PerfGraph fps = {};
-    PerfGraph cpuGraph = {};
-    PerfGraph gpuGraph = {};
-    PerfGraph gpuMemGraph = {};
+    PhaserNativeFPSPerfGraph fps;
+    PhaserNativeMSPerfGraph cpuGraph;
+    PhaserNativeMSPerfGraph gpuGraph;
+    PhaserNativeMemPerfGraph cpuMemGraph;
+    PhaserNativeMemPerfGraph gpuMemGraph;
 
     bool fullScreen = false;
     bool resizable = true;
@@ -36,6 +37,7 @@ private:
     std::string title = "PhaserNative";
     float m_backgroundColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
+    uint64_t pageSize = 0;
     uint64_t m_currentTime = 0;
     uint64_t m_prevTime = 0;
     uint64_t m_deltaTime = 0;

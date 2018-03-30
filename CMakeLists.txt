@@ -30,6 +30,8 @@ add_executable(${PROJECT_NAME}
     src/PhaserNativeApp.h
     src/PhaserNativeEvent.cpp
     src/PhaserNativeEvent.h
+    src/PhaserNativePerfGraph.cpp
+    src/PhaserNativePerfGraph.h
     src/PhaserNativeScript.cpp
     src/PhaserNativeScript.h
     src/PhaserNativeWindow.h
@@ -57,8 +59,6 @@ add_executable(${PROJECT_NAME}
     src/nanovg/nanovg_gl.h
     src/nanovg/nanovg_gl_utils.h
     src/nanovg/nanovg.h
-    src/nanovg/perf.c
-    src/nanovg/perf.h
     src/nanovg/stb_image.h
     src/nanovg/stb_truetype.h
 

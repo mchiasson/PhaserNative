@@ -9,8 +9,20 @@
 #define NANOVG_GL3_IMPLEMENTATION
 #include <nanovg/nanovg_gl.h>
 
+#if defined(__linux__)
+#include <sys/sysinfo.h>
+#endif
 
-PhaserNativeWindow::PhaserNativeWindow()
+#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+#include <unistd.h>
+#endif
+
+PhaserNativeWindow::PhaserNativeWindow() :
+    fps("Frame Time"),
+    cpuGraph("CPU Time"),
+    gpuGraph("GPU Time"),
+    cpuMemGraph("CPU Mem"),
+    gpuMemGraph("Sys GPU Mem")
 {
 #ifndef NDEBUG
     SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_VERBOSE);
@@ -25,11 +37,6 @@ PhaserNativeWindow::PhaserNativeWindow()
 
 //    uint32_t flags = SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | SDL_WINDOW_ALLOW_HIGHDPI;
     uint32_t flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
-
-    initGraph(&fps, GRAPH_RENDER_FPS, "Frame Time");
-    initGraph(&cpuGraph, GRAPH_RENDER_MS, "CPU Time");
-    initGraph(&gpuGraph, GRAPH_RENDER_MS, "GPU Time");
-    initGraph(&gpuMemGraph, GRAPH_RENDER_GPU_MB, "GPU Mem");
 
 #ifdef NANOVG_GL2_IMPLEMENTATION
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -88,7 +95,9 @@ PhaserNativeWindow::PhaserNativeWindow()
 
     phaserGLInit();
 
-    int nvg_flags = NVG_STENCIL_STROKES;
+    int nvg_flags = 0;
+
+    nvg_flags |= NVG_STENCIL_STROKES;
 
 #ifndef USE_MSAA
     nvg_flags |= NVG_ANTIALIAS;
@@ -97,7 +106,6 @@ PhaserNativeWindow::PhaserNativeWindow()
 #ifndef NDEBUG
     nvg_flags |= NVG_DEBUG;
 #endif
-
 
 #ifdef USE_MSAA
     #ifdef NANOVG_GL2_IMPLEMENTATION
@@ -120,11 +128,6 @@ PhaserNativeWindow::PhaserNativeWindow()
         vg = nvgCreateGLES3(nvg_flags);
     #endif
 #endif
-
-//    if (loadFonts(vg, &data) == -1)
-//    {
-//        abort();
-//    }
 
     SDL_GL_SetSwapInterval(1);
     initGPUTimer(&gpuTimer);
@@ -151,6 +154,23 @@ PhaserNativeWindow::PhaserNativeWindow()
     }
     nvgAddFallbackFontId(vg, fontNormal, fontEmoji);
     nvgAddFallbackFontId(vg, fontBold, fontEmoji);
+
+#if defined(__linux__)
+    {
+        struct sysinfo info;
+        sysinfo(&info);
+        cpuMemGraph.setMaximumValue(info.totalram/1048576.0f);
+
+        pageSize = sysconf(_SC_PAGESIZE);
+    }
+#endif
+
+    if (phaserGLSupport(GL_NVX_gpu_memory_info))
+    {
+        int total;
+        glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &total);
+        gpuMemGraph.setMaximumValue(total/1024.0f);
+    }
 
     m_currentTime = SDL_GetPerformanceCounter();
 }
@@ -194,38 +214,71 @@ void PhaserNativeWindow::render()
 
     nvgBeginFrame(vg, width, height,  fbWidth / (float) width);
 
-    renderGraph(vg, 5,5, &fps);
-    renderGraph(vg, 5+200+5,5, &cpuGraph);
+    int perfGraphCursor = 5;
+    fps.renderGraph(vg, perfGraphCursor, 5);
+    perfGraphCursor += 205;
+
+    cpuGraph.renderGraph(vg, perfGraphCursor, 5);
+    perfGraphCursor += 205;
+
     if (gpuTimer.supported) {
-        renderGraph(vg, 5+200+5+200+5,5, &gpuGraph);
+        gpuGraph.renderGraph(vg, perfGraphCursor, 5);
+        perfGraphCursor += 205;
     }
 
-    if (phaserGLSupport(GL_NVX_gpu_memory_info))
-    {
-        renderGraph(vg, 5+200+5+200+5+200+5,5, &gpuMemGraph);
-    }
+#if defined(__linux__)
+    cpuMemGraph.renderGraph(vg, perfGraphCursor, 5);
+    perfGraphCursor += 205;
+#endif
 
+    if (phaserGLSupport(GL_NVX_gpu_memory_info)) {
+        gpuMemGraph.renderGraph(vg, perfGraphCursor, 5);
+        perfGraphCursor += 205;
+    }
 
     nvgEndFrame(vg);
 
     // Measure the CPU time taken excluding swap buffers (as the swap may wait for GPU)
     uint64_t cpuTime  = (SDL_GetPerformanceCounter() - m_currentTime);
 
-    updateGraph(&fps, m_deltaTime / (float)SDL_GetPerformanceFrequency());
-    updateGraph(&cpuGraph, cpuTime / (float)SDL_GetPerformanceFrequency());
+    fps.updateGraph(m_deltaTime / (float)SDL_GetPerformanceFrequency());
+    cpuGraph.updateGraph(cpuTime / (float)SDL_GetPerformanceFrequency());
 
     // We may get multiple results.
     int n = stopGPUTimer(&gpuTimer, gpuTimes, 3);
     for (int i = 0; i < n; i++) {
-        updateGraph(&gpuGraph, gpuTimes[i]);
+        gpuGraph.updateGraph(gpuTimes[i]);
     }
+
+#if defined(__linux__)
+    {
+        struct statm_t {
+            unsigned long size,resident,share,text,lib,data,dt;
+        } result;
+
+        const char* statm_path = "/proc/self/statm";
+
+        FILE *f = fopen(statm_path,"r");
+        if(!f){
+            perror(statm_path);
+            abort();
+        }
+        if(7 != fscanf(f,"%ld %ld %ld %ld %ld %ld %ld", &result.size,&result.resident,&result.share,&result.text,&result.lib,&result.data,&result.dt))
+        {
+            perror(statm_path);
+            abort();
+        }
+        fclose(f);
+
+        cpuMemGraph.updateGraph(result.resident*pageSize/1048576.0f);
+    }
+#endif
 
     if (phaserGLSupport(GL_NVX_gpu_memory_info))
     {
-        int total, available;
-        glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &total);
+        int available;
         glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &available);
-        updateGraph(&gpuMemGraph, (total-available)/1024.0f);
+        gpuMemGraph.updateGraph(gpuMemGraph.getMaximumValue()-(available/1024.0f));
     }
 
     SDL_GL_SwapWindow(window);
