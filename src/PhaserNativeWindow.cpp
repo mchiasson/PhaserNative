@@ -21,7 +21,7 @@ PhaserNativeWindow::PhaserNativeWindow() :
     fps("Frame Time"),
     cpuGraph("CPU Time"),
     gpuGraph("GPU Time"),
-    cpuMemGraph("CPU Mem"),
+    cpuMemGraph("RSS"),
     gpuMemGraph("Sys GPU Mem")
 {
 #ifndef NDEBUG
