@@ -7,7 +7,6 @@
 
 #include "JSCString.h"
 
-
 namespace JSC
 {
 
@@ -17,7 +16,8 @@ class Object : public boost::noncopyable {
 public:
     using TimeType = std::chrono::time_point<std::chrono::system_clock>;
 
-    static Object Make(JSContextRef ctx, JSClassRef jsClass = nullptr, void* data = nullptr);
+    static Object MakeDefault(JSContextRef ctx);
+    static Object Make(JSContextRef ctx, JSClassRef jsClass, void* data = nullptr);
     static Object MakeArray(JSContextRef ctx, JSValueRef* elements, unsigned length);
     static Object MakeDate(JSContextRef ctx, TimeType time);
     static Object MakeError(JSContextRef ctx, const char *error, const char *stack = nullptr);

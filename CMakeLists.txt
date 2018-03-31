@@ -24,6 +24,8 @@ find_package(Boost CONFIG REQUIRED)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/ColorUtil.cpp
+    src/ColorUtil.h
     src/PhaserGL.c
     src/PhaserGL.h
     src/PhaserNativeApp.cpp
@@ -36,13 +38,27 @@ add_executable(${PROJECT_NAME}
     src/PhaserNativeWindow.cpp
 
     ### Javascript Bindings
-    src/bindings/Bindings.cpp
+    src/bindings/Canvas.cpp
+    src/bindings/Canvas.h
+    src/bindings/CanvasRenderingContext2D.cpp
+    src/bindings/CanvasRenderingContext2D.h
+    src/bindings/Console.cpp
     src/bindings/Console.h
+    src/bindings/Document.cpp
     src/bindings/Document.h
+    src/bindings/DocumentElement.cpp
+    src/bindings/DocumentElement.h
+    src/bindings/Image.cpp
     src/bindings/Image.h
+    src/bindings/Navigator.cpp
     src/bindings/Navigator.h
+    src/bindings/Phaser.cpp
     src/bindings/Phaser.h
+    src/bindings/Performance.cpp
+    src/bindings/Performance.h
+    src/bindings/Timer.cpp
     src/bindings/Timer.h
+    src/bindings/Window.cpp
     src/bindings/Window.h
 
     ### Khronos
@@ -53,6 +69,9 @@ add_executable(${PROJECT_NAME}
     src/stb/stb_truetype.h
 
     ### JavaScriptCore Helpers
+    src/JSC/JSCClass.h
+    src/JSC/JSCContext.cpp
+    src/JSC/JSCContext.h
     src/JSC/JSCException.cpp
     src/JSC/JSCException.h
     src/JSC/JSCHelpers.cpp

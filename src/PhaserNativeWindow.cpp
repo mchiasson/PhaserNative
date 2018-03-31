@@ -17,6 +17,10 @@
 #include <unistd.h>
 #endif
 
+SDL_Window *PhaserNativeWindow::window = nullptr;
+SDL_GLContext PhaserNativeWindow::context = nullptr;
+NVGcontext* PhaserNativeWindow::vg = nullptr;
+
 PhaserNativeWindow::PhaserNativeWindow() :
     fps("Frame Time"),
     cpuGraph("CPU Time"),

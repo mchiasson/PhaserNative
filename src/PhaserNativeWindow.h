@@ -17,12 +17,12 @@ public:
 
     void render();
 
+    static SDL_Window *window;
+    static SDL_GLContext context;
+    static NVGcontext* vg;
+
 private:
 
-    SDL_Window *window = nullptr;
-    SDL_GLContext context = nullptr;
-
-    NVGcontext* vg = nullptr;
     GPUtimer gpuTimer = {};
     PhaserNativeFPSPerfGraph fps;
     PhaserNativeMSPerfGraph cpuGraph;

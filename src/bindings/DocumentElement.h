@@ -2,7 +2,7 @@
 
 #include "JSC/JSCHelpers.h"
 
-class Document :  public JSC::Binding<Document>
+class DocumentElement :  public JSC::Binding<DocumentElement>
 {
 public:
 

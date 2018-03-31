@@ -1,8 +1,11 @@
 #pragma once
 
 #include "JSC/JSCHelpers.h"
+#include <SDL2/SDL_log.h>
 
-class Document :  public JSC::Binding<Document>
+#include "CanvasRenderingContext2D.h"
+
+class Canvas : public JSC::Binding<Canvas>
 {
 public:
 
@@ -13,5 +16,6 @@ private:
     static JSC_INITIALIZER(Initializer);
     static JSC_FINALIZER(Finalizer);
 
-    static JSC_FUNCTION(createElement);
+    static JSC_FUNCTION(getContext);
 };
+

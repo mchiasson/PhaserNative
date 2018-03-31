@@ -2,7 +2,17 @@
 #include "PhaserNativeEvent.h"
 #include "PhaserNativeWindow.h"
 
-#include "JSC/JSCHelpers.h"
+// DOM/HTML5 object subs/wrappers/implementations
+#include "bindings/Canvas.h"
+#include "bindings/CanvasRenderingContext2D.h"
+#include "bindings/Console.h"
+#include "bindings/Document.h"
+#include "bindings/Image.h"
+#include "bindings/Timer.h"
+#include "bindings/Navigator.h"
+#include "bindings/Window.h"
+#include "bindings/Phaser.h"
+
 
 PhaserNativeApp::PhaserNativeApp()
 {
@@ -36,16 +46,22 @@ int PhaserNativeApp::run(int argc, char* argv[])
         return -1;
     }
 
-    JSC::registerAllBindings();
+    JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
+    JSC::Object globalObject = JSC::Object::getGlobalObject(ctx);
+
+    globalObject.setProperty("window", Window::Create(ctx));
+    globalObject.setProperty("navigator", Navigator::Create(ctx));
+    globalObject.setProperty("document", Document::Create(ctx));
+    globalObject.setProperty("Image", Image::Create(ctx));
+
+    Phaser::Register(ctx);
+
 
     for(auto javascriptFile : javascriptFiles) {
 
         SDL_LogInfo(0, "Evaluating %s...\n", javascriptFile);
 
-        if ((rc = JSC::evaluateFromFile(javascriptFile)) != 0)
-        {
-            return rc;
-        }
+        JSC::evaluateScriptFromFile(ctx, javascriptFile);
     }
 
     m_running = true;
@@ -163,9 +179,9 @@ void PhaserNativeApp::processEvent()
                 //int timer_id = static_cast<int>(reinterpret_cast<intptr_t>(e.user.data2));
 
                 JSObjectRef callbackObject = reinterpret_cast<JSObjectRef>(e.user.data1);
-                if (JSObjectIsFunction(JSC::globalContext(), callbackObject))
+                if (JSObjectIsFunction(JSC::GlobalContext::GetInstance(), callbackObject))
                 {
-                    JSObjectCallAsFunction(JSC::globalContext(), callbackObject, JSContextGetGlobalObject(JSC::globalContext()), 0, nullptr, nullptr);
+                    JSObjectCallAsFunction(JSC::GlobalContext::GetInstance(), callbackObject, JSContextGetGlobalObject(JSC::GlobalContext::GetInstance()), 0, nullptr, nullptr);
                 }
 
                 if (oneshot) {

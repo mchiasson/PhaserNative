@@ -2,7 +2,8 @@
 
 #include "JSC/JSCHelpers.h"
 
-class Document :  public JSC::Binding<Document>
+
+class Performance : public JSC::Binding<Performance>
 {
 public:
 
@@ -13,5 +14,6 @@ private:
     static JSC_INITIALIZER(Initializer);
     static JSC_FINALIZER(Finalizer);
 
-    static JSC_FUNCTION(createElement);
+    static JSC_FUNCTION(now);
 };
+

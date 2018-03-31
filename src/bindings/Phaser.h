@@ -2,7 +2,10 @@
 
 #include "JSC/JSCHelpers.h"
 
-JSC_BINDINGS(Phaser)
+class Phaser : public JSC::Binding<Phaser>
 {
-    JSC::evaluateFromFile("phaser.js");
-}
+public:
+
+    static void Register(JSContextRef ctx);
+
+};

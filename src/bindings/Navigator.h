@@ -2,12 +2,13 @@
 
 #include "JSC/JSCHelpers.h"
 
+class Navigator : public JSC::Binding<Navigator>
+{
+public:
+    static JSC::Class &GetClassRef();
 
-JSC_BINDINGS(Navigator) {
-    JSC::evaluateScript(JSC::globalContext(),
-                        "var navigator = {\n"
-                    #if defined(__linux__)
-                        "    userAgent: \"Linux\""
-                    #endif
-                        "}\n", "Navigator.h");
-}
+private:
+
+    static JSC_INITIALIZER(Initializer);
+    static JSC_FINALIZER(Finalizer);
+};

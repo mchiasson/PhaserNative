@@ -7,6 +7,12 @@
 namespace JSC
 {
 
+Object Object::MakeDefault(JSContextRef ctx)
+{
+    return Object(ctx, JSObjectMake(ctx, nullptr, nullptr));
+}
+
+
 Object Object::Make(JSContextRef ctx, JSClassRef jsClass, void* data)
 {
     return Object(ctx, JSObjectMake(ctx, jsClass, data));
@@ -65,7 +71,6 @@ Object Object::MakeError(JSContextRef ctx, const char *error, const char *stack)
         return errorObj;
     }
 }
-
 
 Object::operator Value() const
 {

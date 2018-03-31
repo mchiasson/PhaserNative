@@ -1,28 +1,15 @@
 #include "JSCHelpers.h"
-
 #include "JSCException.h"
 
 #include <SDL2/SDL_log.h>
-#include <cassert>
-
 
 namespace JSC
 {
 
-void registerAllBindings()
-{
-    for (size_t i = 0; i < JSC::bindings().size(); ++i) {
-        JSC::bindings()[i]();
-    }
-
-    JSC::bindings().clear();
-    JSC::bindings().resize(0);
-}
-
-int evaluateFromFile(const char *path)
+Value evaluateScriptFromFile(JSContextRef ctx, const char *path)
 {
     FILE *f = NULL;
-    int retval;
+    Value retval;
     char fnbuf[256];
 
     // memory overrun protection
@@ -30,25 +17,27 @@ int evaluateFromFile(const char *path)
     fnbuf[sizeof(fnbuf) - 1] = (char) 0;
 
     f = fopen(fnbuf, "rb");
-    if (!f) {
+    if (f)
+    {
+        retval = evaluateScriptFromFileHandler(ctx, f, path);
+        fclose(f);
+    }
+    else
+    {
         SDL_LogError(0, "Failed to open source file: %s\n", path);
-        return -1;
     }
 
-    retval = evaluateFromFileHandler(f, path);
-
-    fclose(f);
     return retval;
 
 }
 
-int evaluateFromFileHandler(FILE *f, const char *sourceURL)
+Value evaluateScriptFromFileHandler(JSContextRef ctx, FILE *f, const char *sourceURL)
 {
     char *buf = NULL;
     size_t bufsz;
     size_t bufoff;
     size_t got;
-    int retval = 0;
+    Value retval;
 
     buf = (char *) malloc(1024);
     if (!buf) {
@@ -86,7 +75,7 @@ int evaluateFromFileHandler(FILE *f, const char *sourceURL)
     }
 
 
-    retval = evaluateFromString(std::string(buf, bufoff), sourceURL);
+    retval = evaluateScriptFromString(ctx, std::string(buf, bufoff), sourceURL);
 
 cleanup:
     if (buf) {
@@ -96,38 +85,19 @@ cleanup:
     return retval;
 }
 
-int evaluateFromString(const std::string &script, const char *sourceURL)
+Value evaluateScriptFromString(JSContextRef ctx, const std::string &script, const char *sourceURL)
 {
-    evaluateScript(JSC::globalContext(), script, sourceURL);
-
-    return 0;
+    return evaluateScript(ctx, String(ctx, script), String(ctx, sourceURL));
 }
 
-
-JSGlobalContextRef &globalContext() {
-    static JSGlobalContextRef _ctx = nullptr;
-    if (!_ctx) {
-        _ctx = JSGlobalContextCreateInGroup(nullptr, nullptr);
-    }
-    return _ctx;
-}
-
-std::vector<void(*)()> &bindings() {
-    static std::vector<void(*)()> _bindings;
-    return _bindings;
-}
-
-Value evaluateScript(JSContextRef ctx, const std::string &script, const std::string &sourceURL)
+Value evaluateScript(JSContextRef ctx, const String &scriptUTF8, const String &sourceURL)
 {
-    String jsScript = String(ctx, script);
-    String jsSourceURL = String(ctx, sourceURL);
     JSValueRef exception = nullptr;
-    Value result = Value(ctx, JSEvaluateScript(ctx, jsScript, NULL, jsSourceURL, 0, &exception));
+    Value result = Value(ctx, JSEvaluateScript(ctx, scriptUTF8, NULL, sourceURL, 0, &exception));
     if (!result)
     {
-        throw Exception(ctx, exception, jsSourceURL);
+        throw Exception(ctx, exception, sourceURL);
     }
     return result;
 }
-
 }

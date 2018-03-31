@@ -12,6 +12,7 @@ namespace JSC
 class Value : public boost::noncopyable
 {
 public:
+    Value() : m_context(nullptr), m_value(nullptr) {}
     Value(JSContextRef context, JSValueRef value);
     Value(JSContextRef context, JSStringRef value);
 
