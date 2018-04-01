@@ -58,6 +58,8 @@ add_executable(${PROJECT_NAME}
     src/bindings/Performance.h
     src/bindings/Window.cpp
     src/bindings/Window.h
+    src/bindings/WebGLRenderingContext.cpp
+    src/bindings/WebGLRenderingContext.h
 
     ### Khronos
     src/KHR/khrplatform.h

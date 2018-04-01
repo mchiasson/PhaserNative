@@ -1,10 +1,13 @@
 #include "Canvas.h"
 #include "CanvasRenderingContext2D.h"
+#include "WebGLRenderingContext.h"
 
 JSC_INITIALIZER(Canvas::Initializer) {
     size_t index = _AllocateInstance();
     JSObjectSetPrivate(object, (void*)index);
     JSC::Object(ctx, object).setProperty("2d", CanvasRenderingContext2D::Create(ctx));
+    JSC::Object(ctx, object).setProperty("webgl", WebGLRenderingContext::Create(ctx));
+    JSC::Object(ctx, object).setProperty("experimental-webgl", WebGLRenderingContext::Create(ctx));
 }
 
 JSC_FINALIZER(Canvas::Finalizer) {
@@ -28,12 +31,16 @@ JSC::Class &Canvas::GetClassRef()
         };
 
         JSClassDefinition canvasClassDefinition = kJSClassDefinitionEmpty;
-        canvasClassDefinition.className = "Canvas";
+        canvasClassDefinition.className = "HTMLCanvasElement";
         canvasClassDefinition.attributes = kJSClassAttributeNone;
         canvasClassDefinition.staticFunctions = canvasStaticFunctions;
         canvasClassDefinition.initialize = Canvas::Initializer;
         canvasClassDefinition.finalize = Canvas::Finalizer;
         _class = JSC::Class(&canvasClassDefinition);
+
+        JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
+        JSC::Object globalObject = JSC::Object(ctx, JSContextGetGlobalObject(ctx));
+        globalObject.setProperty("HTMLCanvasElement", Create(ctx));
     }
 
     return _class;

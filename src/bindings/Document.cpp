@@ -8,7 +8,11 @@ JSC_INITIALIZER(Document::Initializer)
 {
     size_t index = _AllocateInstance();
     JSObjectSetPrivate(object, (void*)index);
-    JSC::Object(ctx, object).setProperty("documentElement", DocumentElement::Create(ctx));
+
+    JSC::Object instance = JSC::Object(ctx, object);
+
+    instance.setProperty("documentElement", DocumentElement::Create(ctx));
+    instance.setProperty("readyState", JSC::String(ctx, "complete")); // pretend the DOM is ready.
 }
 
 JSC_FINALIZER(Document::Finalizer)

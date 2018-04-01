@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL_timer.h>
 #include "PhaserNativeEvent.h"
+#include "WebGLRenderingContext.h"
 
 JSC_INITIALIZER(Window::Initializer)
 {
@@ -16,6 +17,7 @@ JSC_INITIALIZER(Window::Initializer)
     JSC::Object clearTimeout = globalObject.getProperty("clearTimeout").toObject();
     JSC::Object setInterval = globalObject.getProperty("setInterval").toObject();
     JSC::Object clearInterval = globalObject.getProperty("clearInterval").toObject();
+    JSC::Object(ctx, object).setProperty("WebGLRenderingContext", WebGLRenderingContext::Create(ctx));
 
     instance.setProperty("performance", Performance::Create(ctx));
     instance.setProperty("setTimeout", setTimeout);

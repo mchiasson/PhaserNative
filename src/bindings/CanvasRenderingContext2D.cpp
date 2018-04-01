@@ -39,6 +39,22 @@ JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
     return JSC::Value::MakeUndefined(ctx);
 }
 
+JSC_FUNCTION(CanvasRenderingContext2D::createImageData) {
+
+    JSC::Value sw = JSC::Value(ctx, argv[0]);
+    JSC::Value sh = JSC::Value(ctx, argv[1]);
+
+    unsigned length = sw.toInteger() * sh.toInteger() * 4;
+    JSC::Object data = JSC::Object(ctx, JSObjectMakeTypedArray(ctx, kJSTypedArrayTypeUint8Array, length, nullptr));
+
+    JSC::Object imageData = JSC::Object::MakeDefault(ctx);
+    imageData.setReadOnlyProperty("data", data);
+    imageData.setReadOnlyProperty("width", sw);
+    imageData.setReadOnlyProperty("height", sh);
+
+    return imageData;
+}
+
 JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
 
     JSC::Value sx = JSC::Value(ctx, argv[0]);
@@ -92,26 +108,27 @@ JSC::Class &CanvasRenderingContext2D::GetClassRef()
 {
     if (!_class)
     {
-        static JSStaticFunction context2DStaticFunctions[] = {
+        static JSStaticFunction staticFunctions[] = {
             { "fillRect", CanvasRenderingContext2D::fillRect, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "createImageData", CanvasRenderingContext2D::createImageData, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "getImageData", CanvasRenderingContext2D::getImageData, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "putImageData", CanvasRenderingContext2D::putImageData, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { 0, 0, 0 }
         };
 
-        static JSStaticValue context2DStaticValues[] = {
-        { "fillStyle", CanvasRenderingContext2D::get_fillStyle, CanvasRenderingContext2D::set_fillStyle, kJSPropertyAttributeDontDelete },
-        { 0, 0,0, 0 }
+        static JSStaticValue staticValues[] = {
+            { "fillStyle", CanvasRenderingContext2D::get_fillStyle, CanvasRenderingContext2D::set_fillStyle, kJSPropertyAttributeDontDelete },
+            { 0, 0, 0, 0 }
         };
 
-        JSClassDefinition context2DClassDefinition = kJSClassDefinitionEmpty;
-        context2DClassDefinition.className = "CanvasRenderingContext2D";
-        context2DClassDefinition.attributes = kJSClassAttributeNone;
-        context2DClassDefinition.staticFunctions = context2DStaticFunctions;
-        context2DClassDefinition.staticValues = context2DStaticValues;
-        context2DClassDefinition.initialize = CanvasRenderingContext2D::Initializer;
-        context2DClassDefinition.finalize = CanvasRenderingContext2D::Finalizer;
-        _class = JSC::Class(&context2DClassDefinition);
+        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
+        classDefinition.className = "CanvasRenderingContext2D";
+        classDefinition.attributes = kJSClassAttributeNone;
+        classDefinition.staticFunctions = staticFunctions;
+        classDefinition.staticValues = staticValues;
+        classDefinition.initialize = CanvasRenderingContext2D::Initializer;
+        classDefinition.finalize = CanvasRenderingContext2D::Finalizer;
+        _class = JSC::Class(&classDefinition);
     }
 
     return _class;
