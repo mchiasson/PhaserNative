@@ -4,15 +4,12 @@
 
 JSC_INITIALIZER(Console::Initializer)
 {
-    size_t index = _AllocateInstance();
-    JSC::Object(object).setPrivate(index);
+    _CreateInstance(object);
 }
 
 JSC_FINALIZER(Console::Finalizer)
 {
-    JSC::Object instance = object;
-    size_t index = instance.getPrivate<size_t>();
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC_FUNCTION(Console::log) {

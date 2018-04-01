@@ -2,14 +2,12 @@
 
 JSC_INITIALIZER(DocumentElement::Initializer)
 {
-    size_t index = _AllocateInstance();
-    JSC::Object(object).setPrivate(index);
+    _CreateInstance(object);
 }
 
 JSC_FINALIZER(DocumentElement::Finalizer)
 {
-    size_t index = (size_t)JSObjectGetPrivate(object);
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC::Class &DocumentElement::GetClassRef()

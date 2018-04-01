@@ -3,15 +3,12 @@
 
 JSC_INITIALIZER(Performance::Initializer)
 {
-    size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
-
+    _CreateInstance(object);
 }
 
 JSC_FINALIZER(Performance::Finalizer)
 {
-    size_t index = (size_t)JSObjectGetPrivate(object);
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC_FUNCTION(Performance::now)

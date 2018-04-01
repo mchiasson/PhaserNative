@@ -7,29 +7,27 @@
 
 JSC_INITIALIZER(Window::Initializer)
 {
-    size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
+    Window &instance = _CreateInstance(object);
 
+    instance.object.setProperty("WebGLRenderingContext", WebGLRenderingContext::Create());
+    instance.object.setProperty("performance", Performance::Create());
+
+    // install a few global function into the instance.
+    // Not sure why it has to exist in both cases...
     JSC::Object globalObject = JSC_GLOBAL_OBJECT;
     JSC::Object setTimeout = globalObject.getProperty("setTimeout").toObject();
     JSC::Object clearTimeout = globalObject.getProperty("clearTimeout").toObject();
     JSC::Object setInterval = globalObject.getProperty("setInterval").toObject();
     JSC::Object clearInterval = globalObject.getProperty("clearInterval").toObject();
-
-    JSC::Object instance = object;
-    instance.setProperty("WebGLRenderingContext", WebGLRenderingContext::Create());
-    instance.setProperty("performance", Performance::Create());
-    instance.setProperty("setTimeout", setTimeout);
-    instance.setProperty("clearTimeout", clearTimeout);
-    instance.setProperty("setInterval", setInterval);
-    instance.setProperty("clearInterval", clearInterval);
-
+    instance.object.setProperty("setTimeout", setTimeout);
+    instance.object.setProperty("clearTimeout", clearTimeout);
+    instance.object.setProperty("setInterval", setInterval);
+    instance.object.setProperty("clearInterval", clearInterval);
 }
 
 JSC_FINALIZER(Window::Finalizer)
 {
-    size_t index = (size_t)JSObjectGetPrivate(object);
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC_FUNCTION(Window::createTimer) {

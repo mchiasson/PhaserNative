@@ -3,17 +3,14 @@
 #include "WebGLRenderingContext.h"
 
 JSC_INITIALIZER(Canvas::Initializer) {
-    size_t index = _AllocateInstance();
-    JSC::Object instance = object;
-    instance.setPrivate(index);
-    instance.setProperty("2d", CanvasRenderingContext2D::Create());
-    instance.setProperty("webgl", WebGLRenderingContext::Create());
-    instance.setProperty("experimental-webgl", WebGLRenderingContext::Create());
+    Canvas &instance = _CreateInstance(object);
+    instance.object.setProperty("2d", CanvasRenderingContext2D::Create());
+    instance.object.setProperty("webgl", WebGLRenderingContext::Create());
+    instance.object.setProperty("experimental-webgl", WebGLRenderingContext::Create());
 }
 
 JSC_FINALIZER(Canvas::Finalizer) {
-    size_t index = (size_t)JSObjectGetPrivate(object);
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC_FUNCTION(Canvas::getContext) {

@@ -21,16 +21,13 @@
 
 JSC_INITIALIZER(Navigator::Initializer)
 {
-    size_t index = _AllocateInstance();
-    JSC::Object instance = JSC::Object(object);
-    instance.setPrivate(index);
-    instance.setProperty("userAgent", JSC::Value(OS_NAME));
+    Navigator &navigator = _CreateInstance(object);
+    navigator.object.setProperty("userAgent", JSC::Value(OS_NAME));
 }
 
 JSC_FINALIZER(Navigator::Finalizer)
 {
-    size_t index = (size_t)JSObjectGetPrivate(object);
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC::Class &Navigator::GetClassRef()

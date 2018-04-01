@@ -10,7 +10,7 @@
 #define JSC_GLOBAL_OBJECT JSC::Object::getGlobalObject()
 
 #define JSC_CONSTRUCTOR(_CONSTRUCTOR_NAME_) \
-    JSObjectRef _CONSTRUCTOR_NAME_(JSContextRef ctx, JSObjectRef constructor, size_t argc, const JSValueRef argv[], JSValueRef* exception)
+    JSObjectRef _CONSTRUCTOR_NAME_(JSContextRef ctx, JSObjectRef object, size_t argc, const JSValueRef argv[], JSValueRef* exception)
 
 #define JSC_INITIALIZER(_INITIALIZER_NAME_) \
     void _INITIALIZER_NAME_(JSContextRef ctx, JSObjectRef object)
@@ -65,11 +65,19 @@ public:
         return JSC::Object::Make(C::GetClassRef());
     }
 
+    operator JSObjectRef() const {
+        return object;
+    }
+
+    operator JSValueRef() const {
+        return object;
+    }
+
 protected:
 
-    static size_t _AllocateInstance()
+    static size_t _GetNextIndex()
     {
-        size_t index = 1;
+        size_t index = 1; // 0 is reserved.
         bool found = false;
         for (index = 1; index < _pool.size(); ++index) {
             if (!_pool[index]._inUse) {
@@ -84,17 +92,25 @@ protected:
         return index;
     }
 
-    static C &_CreateInstance() {
-        return _GetInstance(_AllocateInstance());
+    static C &_CreateInstance(JSC::Object object) {
+        size_t index = _GetNextIndex();
+        C &instance = _pool[index];
+        instance.object = std::move(object);
+        instance.object.setPrivate(index);
+        return instance;
     }
 
-
-    static void _FreeInstance(size_t index) {
+    static void _FreeInstance(JSC::Object object) {
+        size_t index = object.getPrivate<size_t>();
         _pool[index]._inUse = false;
     }
 
     static C &_GetInstance(size_t index) {
         return _pool[index];
+    }
+
+    static C &_GetInstance(JSC::Object object) {
+        return _pool[object.getPrivate<size_t>()];
     }
 
     static size_t _GetInstanceCount() {}
@@ -104,7 +120,7 @@ protected:
 
     static Class _class;
 
-    JSC::Object _instance;
+    JSC::Object object;
 
 private:
     bool _inUse = false;

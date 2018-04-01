@@ -1,21 +1,16 @@
 #include "Image.h"
 
 JSC_CONSTRUCTOR(Image::Constructor) {
-    size_t index = _AllocateInstance();
-    JSC::Object object = constructor;
-    object.setPrivate(index);
-
-    Image &instance = _GetInstance(index);
+    Image &instance = _CreateInstance(object);
 
     if (argc > 0) { instance.width = argv[0];}
     if (argc > 1) { instance.height = argv[1];}
 
-    return constructor;
+    return object;
 }
 
 JSC_FINALIZER(Image::Finalizer) {
-    size_t index = (size_t)JSObjectGetPrivate(object);
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC::Class &Image::GetClassRef()

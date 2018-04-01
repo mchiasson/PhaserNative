@@ -6,18 +6,15 @@
 
 JSC_INITIALIZER(Document::Initializer)
 {
-    size_t index = _AllocateInstance();
-    JSC::Object instance = object;
-    instance.setPrivate(index);
+    Document &instance = _CreateInstance(object);
 
-    instance.setProperty("documentElement", DocumentElement::Create());
-    instance.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
+    instance.object.setProperty("documentElement", DocumentElement::Create());
+    instance.object.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
 }
 
 JSC_FINALIZER(Document::Finalizer)
 {
-    size_t index = (size_t)JSObjectGetPrivate(object);
-    _FreeInstance(index);
+    _FreeInstance(object);
 }
 
 JSC_FUNCTION(Document::createElement) {

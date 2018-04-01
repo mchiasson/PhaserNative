@@ -6,24 +6,22 @@
 #include <PhaserGL.h>
 
 JSC_INITIALIZER(CanvasRenderingContext2D::Initializer) {
-    size_t index = _AllocateInstance();
-    JSC::Object(object).setPrivate(index);
+    _CreateInstance(object);
 }
 
 JSC_FINALIZER(CanvasRenderingContext2D::Finalizer) {
-    size_t index = JSC::Object(object).getPrivate<size_t>();
-    _FreeInstance(index);
+
+    _FreeInstance(object);
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
-
-    size_t index = JSC::Object(object).getPrivate<size_t>();
-    CanvasRenderingContext2D &instance = _GetInstance(index);
 
     JSC::Value x = argv[0];
     JSC::Value y = argv[1];
     JSC::Value w = argv[2];
     JSC::Value h = argv[3];
+
+    CanvasRenderingContext2D &instance = _GetInstance(object);
 
     nvgBeginPath(PhaserNativeWindow::vg);
     nvgRect(PhaserNativeWindow::vg, x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat());
