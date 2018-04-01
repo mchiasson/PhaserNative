@@ -16,7 +16,7 @@ JSC_FINALIZER(Performance::Finalizer)
 
 JSC_FUNCTION(Performance::now)
 {
-    return JSC::Value::MakeNumber(ctx, SDL_GetTicks());
+    return JSC::Value(SDL_GetTicks());
 }
 
 JSC::Class &Performance::GetClassRef()

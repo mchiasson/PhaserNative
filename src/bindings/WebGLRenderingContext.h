@@ -6,8 +6,6 @@ class WebGLRenderingContext : public JSC::Binding<WebGLRenderingContext>
 {
 public:
 
-public:
-
     static JSC::Class &GetClassRef();
 
 private:

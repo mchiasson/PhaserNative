@@ -3,8 +3,7 @@
 JSC_INITIALIZER(DocumentElement::Initializer)
 {
     size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
-
+    JSC::Object(object).setPrivate(index);
 }
 
 JSC_FINALIZER(DocumentElement::Finalizer)

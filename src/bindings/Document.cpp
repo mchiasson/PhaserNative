@@ -7,12 +7,11 @@
 JSC_INITIALIZER(Document::Initializer)
 {
     size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
+    JSC::Object instance = object;
+    instance.setPrivate(index);
 
-    JSC::Object instance = JSC::Object(ctx, object);
-
-    instance.setProperty("documentElement", DocumentElement::Create(ctx));
-    instance.setProperty("readyState", JSC::String(ctx, "complete")); // pretend the DOM is ready.
+    instance.setProperty("documentElement", DocumentElement::Create());
+    instance.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
 }
 
 JSC_FINALIZER(Document::Finalizer)
@@ -22,15 +21,15 @@ JSC_FINALIZER(Document::Finalizer)
 }
 
 JSC_FUNCTION(Document::createElement) {
-    JSC::String elementName = JSC::Value(ctx, argv[0]).toString();
+    JSC::String elementName = JSC::Value(argv[0]).toString();
     if (elementName == "canvas")
     {
-        return Canvas::Create(ctx);
+        return Canvas::Create();
     }
     else
     {
         SDL_LogWarn(0, "Document.createElement('%s') is currently not supported.", elementName.getUTF8String().c_str());
-        return JSC::Object::MakeDefault(ctx);
+        return JSC::Object::MakeDefault();
     }
 
 }

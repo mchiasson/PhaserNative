@@ -10,7 +10,6 @@
 #include "bindings/Image.h"
 #include "bindings/Navigator.h"
 #include "bindings/Window.h"
-#include "bindings/Phaser.h"
 
 
 PhaserNativeApp::PhaserNativeApp()
@@ -45,23 +44,24 @@ int PhaserNativeApp::run(int argc, char* argv[])
         return -1;
     }
 
-    JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
-    JSC::Object globalObject = JSC::Object::getGlobalObject(ctx);
+    JSC::Object globalObject = JSC::Object::getGlobalObject();
 
-    globalObject.setProperty("console", Console::Create(ctx));
-    globalObject.setProperty("window", Window::Create(ctx));
-    globalObject.setProperty("navigator", Navigator::Create(ctx));
-    globalObject.setProperty("document", Document::Create(ctx));
-    globalObject.setProperty("Image", Image::Create(ctx));
+    globalObject.setProperty("console", Console::Create());
+    globalObject.setProperty("window", Window::Create());
+    globalObject.setProperty("navigator", Navigator::Create());
+    globalObject.setProperty("document", Document::Create());
+    globalObject.setProperty("Image", Image::Create());
 
-    Phaser::Register(ctx);
+    // evaluate phaser.js
+    JSC::evaluateScriptFromFile("phaser.js");
+
 
 
     for(auto javascriptFile : javascriptFiles) {
 
         SDL_LogInfo(0, "Evaluating %s...\n", javascriptFile);
 
-        JSC::evaluateScriptFromFile(ctx, javascriptFile);
+        JSC::evaluateScriptFromFile(javascriptFile);
     }
 
     m_running = true;
@@ -181,7 +181,7 @@ void PhaserNativeApp::processEvent()
                 JSObjectRef callbackObject = reinterpret_cast<JSObjectRef>(e.user.data1);
                 if (JSObjectIsFunction(JSC::GlobalContext::GetInstance(), callbackObject))
                 {
-                    JSObjectCallAsFunction(JSC::GlobalContext::GetInstance(), callbackObject, JSContextGetGlobalObject(JSC::GlobalContext::GetInstance()), 0, nullptr, nullptr);
+                    JSObjectCallAsFunction(JSC_GLOBAL_CTX, callbackObject, JSC_GLOBAL_OBJECT, 0, nullptr, nullptr);
                 }
 
                 if (oneshot) {

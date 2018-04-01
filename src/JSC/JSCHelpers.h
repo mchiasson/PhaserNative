@@ -6,6 +6,9 @@
 
 #include <vector>
 
+#define JSC_GLOBAL_CTX JSC::GlobalContext::GetInstance()
+#define JSC_GLOBAL_OBJECT JSC::Object::getGlobalObject()
+
 #define JSC_CONSTRUCTOR(_CONSTRUCTOR_NAME_) \
     JSObjectRef _CONSTRUCTOR_NAME_(JSContextRef ctx, JSObjectRef constructor, size_t argc, const JSValueRef argv[], JSValueRef* exception)
 
@@ -22,10 +25,8 @@
     static JSValueRef get_##_NAME_(JSContextRef ctx, JSObjectRef object, JSStringRef /*propertyName*/, JSValueRef* exception) {\
         size_t index = (size_t)JSObjectGetPrivate(object);\
         if (index == 0) {\
-            JSC::Value message = JSC::Value::MakeString(ctx, "Requires to be allocated with 'new' before use.");\
-            JSValueRef args[] { message, nullptr };\
-            *exception = JSObjectMakeError(ctx, 1, args, nullptr);\
-            return message;\
+            *exception = JSC::Object::MakeError("Requires to be allocated with 'new' before use.", nullptr);\
+            return JSC::Value::MakeUndefined();\
         } else {\
             return _GetInstance(index)._NAME_;\
         }\
@@ -33,12 +34,10 @@
     static bool set_##_NAME_(JSContextRef ctx, JSObjectRef object, JSStringRef /*propertyName*/, JSValueRef value, JSValueRef* exception) {\
         size_t index = (size_t)JSObjectGetPrivate(object);\
         if (index == 0) {\
-            JSC::Value message = JSC::Value::MakeString(ctx, "Requires to be allocated with 'new' before use.");\
-            JSValueRef args[] { message, nullptr };\
-            *exception = JSObjectMakeError(ctx, 1, args, nullptr);\
+            *exception = JSC::Object::MakeError("Requires to be allocated with 'new' before use.", nullptr);\
             return false;\
         } else {\
-            _GetInstance(index)._NAME_ = JSC::Value(ctx, value);\
+            _GetInstance(index)._NAME_ = value;\
             return true;\
         }\
     }\
@@ -58,12 +57,12 @@ template<class C>
 class Binding {
 public:
 
-    static JSC::Object Create(JSContextRef ctx)
+    static JSC::Object Create()
     {
         // this is how we force subclasses to write their GetClassRef
         // implementation. If you get an error on this line, you forgot to
         // implement 'static JSC::Class &GetClassRef()' in the subclass.
-        return JSC::Object::Make(ctx, C::GetClassRef());
+        return JSC::Object::Make(C::GetClassRef());
     }
 
 protected:
@@ -85,6 +84,11 @@ protected:
         return index;
     }
 
+    static C &_CreateInstance() {
+        return _GetInstance(_AllocateInstance());
+    }
+
+
     static void _FreeInstance(size_t index) {
         _pool[index]._inUse = false;
     }
@@ -100,6 +104,8 @@ protected:
 
     static Class _class;
 
+    JSC::Object _instance;
+
 private:
     bool _inUse = false;
     static std::vector<C> _pool;
@@ -110,9 +116,9 @@ template<class C> Class Binding<C>::_class;
 template<class C> std::vector<C> JSC::Binding<C>::_pool;
 
 
-Value evaluateScriptFromFile(JSContextRef ctx, const char *path);
-Value evaluateScriptFromFileHandler(JSContextRef ctx, FILE *f, const char *sourceURL);
-Value evaluateScriptFromString(JSContextRef ctx, const std::string &scriptUTF8, const char *sourceURL);
-Value evaluateScript(JSContextRef ctx, const String &scriptUTF8, const String &sourceURL);
+Value evaluateScriptFromFile(const char *path);
+Value evaluateScriptFromFileHandler(FILE *f, const char *sourceURL);
+Value evaluateScriptFromString(const std::string &scriptUTF8, const char *sourceURL);
+Value evaluateScript(const String &scriptUTF8, const String &sourceURL);
 
 }

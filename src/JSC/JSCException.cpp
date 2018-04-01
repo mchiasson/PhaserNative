@@ -9,7 +9,34 @@
 namespace JSC
 {
 
-void Exception::buildMessage(JSContextRef ctx, JSValueRef exn, const JSC::String &sourceURL, const char* errorMsg)
+Exception::Exception(const char* msg)
+    : m_message(msg)
+{
+
+}
+
+Exception::Exception(const std::string &msg)
+    : m_message(msg)
+{
+
+}
+
+Exception::Exception(const Value &exception, const char* msg)
+{
+    buildMessage(exception, JSC::String(), msg);
+}
+
+Exception::Exception(const Value &exception, const std::string &msg)
+{
+    buildMessage(exception, JSC::String(), msg.c_str());
+}
+
+Exception::Exception(const Value &exception, const JSC::String &sourceURL)
+{
+    buildMessage(exception, sourceURL, nullptr);
+}
+
+void Exception::buildMessage(const Value &exception, const JSC::String &sourceURL, const char* errorMsg)
 {
     std::stringstream msg;
     if (errorMsg && strlen(errorMsg) > 0)
@@ -17,7 +44,7 @@ void Exception::buildMessage(JSContextRef ctx, JSValueRef exn, const JSC::String
         msg << errorMsg << ": ";
     }
 
-    JSC::Object exnObject = Value(ctx, exn).toObject();
+    JSC::Object exnObject = exception.toObject();
     Value exnMessage = exnObject.getProperty("message");
     if (exnMessage.isString())
     {
@@ -25,7 +52,7 @@ void Exception::buildMessage(JSContextRef ctx, JSValueRef exn, const JSC::String
     }
     else
     {
-        msg << ((Value)exnObject).toString().getUTF8String();
+        msg << exception.toString().getUTF8String();
     }
 
     std::string locationInfo = sourceURL.getUTF8String();

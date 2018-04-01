@@ -13,35 +13,29 @@ namespace JSC
 class String : public boost::noncopyable {
 public:
 
-    explicit String() :
-        m_context(nullptr),
+    String() :
         m_string(nullptr)
     {
     }
 
-    explicit String(JSContextRef context, const JSStringRef &utf8) :
-        m_context(context),
+    String(const JSStringRef &utf8) :
         m_string(utf8)
     {
     }
 
-    explicit String(JSContextRef context, const char* utf8) :
-        m_context(context),
+    String(const char* utf8) :
         m_string(JSStringCreateWithUTF8CString(utf8))
     {
     }
 
-    explicit String(JSContextRef context, const std::string &utf8) :
-        m_context(context),
+    String(const std::string &utf8) :
         m_string(JSStringCreateWithUTF8CString(utf8.c_str()))
     {
     }
 
     String(String&& other) :
-        m_context(other.m_context),
         m_string(other.m_string)
     {
-        other.m_context = nullptr;
         other.m_string = nullptr;
     }
 
@@ -52,7 +46,6 @@ public:
             JSStringRelease(m_string);
             m_string = nullptr;
         }
-        m_context = nullptr;
     }
 
     String& operator=(String&& other)
@@ -62,9 +55,7 @@ public:
             JSStringRelease(m_string);
         }
 
-        m_context = other.m_context;
         m_string = other.m_string;
-        other.m_context = nullptr;
         other.m_string = nullptr;
 
         return *this;
@@ -73,11 +64,6 @@ public:
     operator JSStringRef() const
     {
         return m_string;
-    }
-
-    JSContextRef getContext() const
-    {
-        return m_context;
     }
 
     size_t getLength() const
@@ -120,7 +106,6 @@ public:
 
 private:
 
-    JSContextRef m_context;
     JSStringRef m_string;
 };
 

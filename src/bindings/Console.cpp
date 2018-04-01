@@ -1,81 +1,74 @@
 #include "Console.h"
 
+#include <sstream>
+
 JSC_INITIALIZER(Console::Initializer)
 {
     size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
-
+    JSC::Object(object).setPrivate(index);
 }
 
 JSC_FINALIZER(Console::Finalizer)
 {
-    size_t index = (size_t)JSObjectGetPrivate(object);
+    JSC::Object instance = object;
+    size_t index = instance.getPrivate<size_t>();
     _FreeInstance(index);
 }
 
-
 JSC_FUNCTION(Console::log) {
     try {
-        std::string output;
+        std::stringstream output;
         for(size_t i = 0; i < argc; i++) {
-            if (i > 0){ output += " "; }
-            output += JSC::Value(ctx, argv[i]).toString().getUTF8String();
+            if (i > 0){ output << ' '; }
+            output << JSC::Value(argv[i]).toString().getUTF8String();
         }
-        SDL_Log("%s\n", output.c_str());
+        SDL_Log("%s\n", output.str().c_str());
     } catch(const std::exception & e) {
-        JSC::Value message = JSC::Value::MakeString(ctx, e.what());
-        JSValueRef args[] { message, nullptr };
-        *exception = JSObjectMakeError(ctx, 1, args, nullptr);
+        *exception = JSC::Object::MakeError(e.what());
     }
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(Console::info) {
     try {
-        std::string output;
+        std::stringstream output;
         for(size_t i = 0; i < argc; i++) {
-            if (i > 0){ output += " "; }
-            output += JSC::Value(ctx, argv[i]).toString().getUTF8String();
+            if (i > 0){ output << ' '; }
+            output << JSC::Value(argv[i]).toString().getUTF8String();
         }
-        SDL_LogInfo(0, "%s\n", output.c_str());
+        SDL_LogInfo(0, "%s\n", output.str().c_str());
     } catch(const std::exception & e) {
-        JSC::Value message = JSC::Value::MakeString(ctx, e.what());
-        JSValueRef args[] { message, nullptr };
-        *exception = JSObjectMakeError(ctx, 1, args, nullptr);
+        *exception = JSC::Object::MakeError(e.what());
     }
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(Console::warn) {
     try {
-        std::string output;
+        std::stringstream output;
         for(size_t i = 0; i < argc; i++) {
-            if (i > 0){ output += " "; }
-            output += JSC::Value(ctx, argv[i]).toString().getUTF8String();
+            if (i > 0){ output << ' '; }
+            output << JSC::Value(argv[i]).toString().getUTF8String();
         }
-        SDL_LogWarn(0, "%s\n", output.c_str());
+        SDL_LogWarn(0, "%s\n", output.str().c_str());
     } catch(const std::exception & e) {
-        JSC::Value message = JSC::Value::MakeString(ctx, e.what());
-        JSValueRef args[] { message, nullptr };
-        *exception = JSObjectMakeError(ctx, 1, args, nullptr);
+        *exception = JSC::Object::MakeError(e.what());
     }
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(Console::error) {
     try {
-        std::string output;
+        std::stringstream output;
         for(size_t i = 0; i < argc; i++) {
-            if (i > 0){ output += " "; }
-            output += JSC::Value(ctx, argv[i]).toString().getUTF8String();
+            if (i > 0){ output << ' '; }
+            output << JSC::Value(argv[i]).toString().getUTF8String();
         }
-        SDL_LogError(0, "%s\n", output.c_str());
+        SDL_LogError(0, "%s\n", output.str().c_str());
     } catch(const std::exception & e) {
-        JSC::Value message = JSC::Value::MakeString(ctx, e.what());
-        JSValueRef args[] { message, nullptr };
-        *exception = JSObjectMakeError(ctx, 1, args, nullptr);
+        *exception = JSC::Object::MakeError(e.what());
     }
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC::Class &Console::GetClassRef()

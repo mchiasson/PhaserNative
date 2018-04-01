@@ -5,62 +5,56 @@
 
 #include <PhaserGL.h>
 
-static void freePtr(void* ptr, void*)
-{
-    free(ptr);
-}
-
-
 JSC_INITIALIZER(CanvasRenderingContext2D::Initializer) {
     size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
+    JSC::Object(object).setPrivate(index);
 }
 
 JSC_FINALIZER(CanvasRenderingContext2D::Finalizer) {
-    size_t index = (size_t)JSObjectGetPrivate(object);
+    size_t index = JSC::Object(object).getPrivate<size_t>();
     _FreeInstance(index);
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
 
-    size_t index = (size_t)JSObjectGetPrivate(object);
+    size_t index = JSC::Object(object).getPrivate<size_t>();
     CanvasRenderingContext2D &instance = _GetInstance(index);
 
-    float x = JSC::Value(ctx, argv[0]).toNumber();
-    float y = JSC::Value(ctx, argv[1]).toNumber();
-    float w = JSC::Value(ctx, argv[2]).toNumber();
-    float h = JSC::Value(ctx, argv[3]).toNumber();
+    JSC::Value x = argv[0];
+    JSC::Value y = argv[1];
+    JSC::Value w = argv[2];
+    JSC::Value h = argv[3];
 
     nvgBeginPath(PhaserNativeWindow::vg);
-    nvgRect(PhaserNativeWindow::vg, x, y, w, h);
+    nvgRect(PhaserNativeWindow::vg, x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat());
     nvgFillColor(PhaserNativeWindow::vg, ColorUtil::stringToColor(instance.fillStyle.toString().getUTF8String()));
     nvgFill(PhaserNativeWindow::vg);
 
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::createImageData) {
 
-    JSC::Value sw = JSC::Value(ctx, argv[0]);
-    JSC::Value sh = JSC::Value(ctx, argv[1]);
+    JSC::Value sw = argv[0];
+    JSC::Value sh = argv[1];
 
     unsigned length = sw.toInteger() * sh.toInteger() * 4;
-    JSC::Object data = JSC::Object(ctx, JSObjectMakeTypedArray(ctx, kJSTypedArrayTypeUint8Array, length, nullptr));
+    JSC::Object data = JSC::Object:: MakeTypedArray(kJSTypedArrayTypeUint8Array, length);
 
-    JSC::Object imageData = JSC::Object::MakeDefault(ctx);
-    imageData.setReadOnlyProperty("data", data);
-    imageData.setReadOnlyProperty("width", sw);
-    imageData.setReadOnlyProperty("height", sh);
+    JSC::Object imageData = JSC::Object::MakeDefault();
+    imageData.setProperty("data", data, kJSPropertyAttributeReadOnly);
+    imageData.setProperty("width", sw, kJSPropertyAttributeReadOnly);
+    imageData.setProperty("height", sh, kJSPropertyAttributeReadOnly);
 
     return imageData;
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
 
-    JSC::Value sx = JSC::Value(ctx, argv[0]);
-    JSC::Value sy = JSC::Value(ctx, argv[1]);
-    JSC::Value sw = JSC::Value(ctx, argv[2]);
-    JSC::Value sh = JSC::Value(ctx, argv[3]);
+    JSC::Value sx = argv[0];
+    JSC::Value sy = argv[1];
+    JSC::Value sw = argv[2];
+    JSC::Value sh = argv[3];
 
     const unsigned length = sw.toInteger() * sh.toInteger() * 4;
     void* pixels = malloc(length);
@@ -68,40 +62,40 @@ JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
     glReadBuffer(GL_BACK);
     glReadPixels(sx.toInteger(), sy.toInteger(), sw.toInteger(), sh.toInteger(), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
-    JSC::Object data = JSC::Object(ctx, JSObjectMakeTypedArrayWithBytesNoCopy(ctx, kJSTypedArrayTypeUint8Array, pixels, length, freePtr, nullptr, nullptr));
+    JSC::Object data = JSC::Object::MakeTypedArrayWithBytesNoCopy(kJSTypedArrayTypeUint8Array, pixels, length, [](void* ptr, void*){free(ptr);}, nullptr);
 
-    JSC::Object imageData = JSC::Object::MakeDefault(ctx);
-    imageData.setReadOnlyProperty("data", data);
-    imageData.setReadOnlyProperty("width", sw);
-    imageData.setReadOnlyProperty("height", sh);
+    JSC::Object imageData = JSC::Object::MakeDefault();
+    imageData.setProperty("data", data, kJSPropertyAttributeReadOnly);
+    imageData.setProperty("width", sw, kJSPropertyAttributeReadOnly);
+    imageData.setProperty("height", sh, kJSPropertyAttributeReadOnly);
 
     return imageData;
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::putImageData)
 {
-    JSC::Object imageData = JSC::Value(ctx, argv[0]).toObject();
+    JSC::Object imageData = JSC::Value(argv[0]).toObject();
 
-    float dx = JSC::Value(ctx, argv[1]).toNumber();
-    float dy = JSC::Value(ctx, argv[2]).toNumber();
+    JSC::Value dx = argv[1];
+    JSC::Value dy = argv[2];
 
     JSC::Object data = imageData.getProperty("data").toObject();
-    float width = imageData.getProperty("width").toNumber();
-    float height = imageData.getProperty("height").toNumber();
-    void* pixels = JSObjectGetTypedArrayBytesPtr(ctx, data, nullptr);
+    float width = imageData.getProperty("width").toFloat();
+    float height = imageData.getProperty("height").toFloat();
+    void* pixels = data.getTypedArrayBytesPtr();
 
     int image = nvgCreateImageMem(PhaserNativeWindow::vg, 0, (unsigned char*)pixels, (width * height * 4));
 
     NVGpaint imgPaint = nvgImagePattern(PhaserNativeWindow::vg, 0, 0, width, height, 0.0f, image, 1.0f);
     nvgBeginPath(PhaserNativeWindow::vg);
-    nvgRect(PhaserNativeWindow::vg, dx, dy, width, height);
+    nvgRect(PhaserNativeWindow::vg, dx.toFloat(), dy.toFloat(), width, height);
     nvgFillPaint(PhaserNativeWindow::vg, imgPaint);
     nvgFill(PhaserNativeWindow::vg);
 
     nvgDeleteImage(PhaserNativeWindow::vg, image);
 
 
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC::Class &CanvasRenderingContext2D::GetClassRef()

@@ -2,12 +2,13 @@
 
 JSC_CONSTRUCTOR(Image::Constructor) {
     size_t index = _AllocateInstance();
-    JSObjectSetPrivate(constructor, (void*)index);
+    JSC::Object object = constructor;
+    object.setPrivate(index);
 
     Image &instance = _GetInstance(index);
 
-    if (argc > 0) { instance.width = JSC::Value(ctx, argv[0]);}
-    if (argc > 1) { instance.height = JSC::Value(ctx, argv[1]);}
+    if (argc > 0) { instance.width = argv[0];}
+    if (argc > 1) { instance.height = argv[1];}
 
     return constructor;
 }

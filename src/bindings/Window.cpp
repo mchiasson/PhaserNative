@@ -10,16 +10,15 @@ JSC_INITIALIZER(Window::Initializer)
     size_t index = _AllocateInstance();
     JSObjectSetPrivate(object, (void*)index);
 
-    JSC::Object instance = JSC::Object(ctx, object);
-
-    JSC::Object globalObject = JSC::Object(ctx, JSContextGetGlobalObject(JSC::GlobalContext::GetInstance()));
+    JSC::Object globalObject = JSC_GLOBAL_OBJECT;
     JSC::Object setTimeout = globalObject.getProperty("setTimeout").toObject();
     JSC::Object clearTimeout = globalObject.getProperty("clearTimeout").toObject();
     JSC::Object setInterval = globalObject.getProperty("setInterval").toObject();
     JSC::Object clearInterval = globalObject.getProperty("clearInterval").toObject();
-    JSC::Object(ctx, object).setProperty("WebGLRenderingContext", WebGLRenderingContext::Create(ctx));
 
-    instance.setProperty("performance", Performance::Create(ctx));
+    JSC::Object instance = object;
+    instance.setProperty("WebGLRenderingContext", WebGLRenderingContext::Create());
+    instance.setProperty("performance", Performance::Create());
     instance.setProperty("setTimeout", setTimeout);
     instance.setProperty("clearTimeout", clearTimeout);
     instance.setProperty("setInterval", setInterval);
@@ -34,9 +33,9 @@ JSC_FINALIZER(Window::Finalizer)
 }
 
 JSC_FUNCTION(Window::createTimer) {
-    JSC::Value callbackVal = JSC::Value(ctx, argv[0]);
-    JSC::Value delayVal    = JSC::Value(ctx, argv[1]);
-    JSC::Value oneshotVal  = JSC::Value(ctx, argv[2]);
+    JSC::Value callbackVal = argv[0];
+    JSC::Value delayVal    = argv[1];
+    JSC::Value oneshotVal  = argv[2];
 
     unsigned int delay = delayVal.toInteger();
     bool oneshot = oneshotVal.toBoolean();
@@ -62,11 +61,11 @@ JSC_FUNCTION(Window::createTimer) {
                     }
                 }, event));
 
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(Window::deleteTimer) {
-    JSC::Value timerIDVal = JSC::Value(ctx, argv[0]);
+    JSC::Value timerIDVal = argv[0];
     int timer_id = timerIDVal.toInteger();
 
     if (SDL_RemoveTimer(timer_id)) {
@@ -83,7 +82,7 @@ JSC_FUNCTION(Window::deleteTimer) {
             ++it;
         }
     }
-    return JSC::Value::MakeUndefined(ctx);
+    return JSC::Value::MakeUndefined();
 }
 
 JSC::Class &Window::GetClassRef()
@@ -99,16 +98,17 @@ JSC::Class &Window::GetClassRef()
 
         JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
 
-        JSC::String createTimerFunctionName = JSC::String(ctx, "__createTimer");
-        JSC::String deleteTimerFunctionName = JSC::String(ctx, "__deleteTimer");
+        JSC::String createTimerFunctionName = "__createTimer";
+        JSC::String deleteTimerFunctionName = "__deleteTimer";
 
-        JSObjectRef createTimerFunctionObject = JSObjectMakeFunctionWithCallback(ctx, createTimerFunctionName, createTimer);
-        JSObjectRef deleteTimerFunctionObject = JSObjectMakeFunctionWithCallback(ctx, deleteTimerFunctionName, deleteTimer);
+        JSC::Object createTimerFunctionObject = JSObjectMakeFunctionWithCallback(ctx, createTimerFunctionName, createTimer);
+        JSC::Object deleteTimerFunctionObject = JSObjectMakeFunctionWithCallback(ctx, deleteTimerFunctionName, deleteTimer);
 
-        JSObjectSetProperty(ctx, JSContextGetGlobalObject(ctx), createTimerFunctionName, createTimerFunctionObject, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete, nullptr);
-        JSObjectSetProperty(ctx, JSContextGetGlobalObject(ctx), deleteTimerFunctionName, deleteTimerFunctionObject, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete, nullptr);
+        JSC::Object globalObject = JSC_GLOBAL_OBJECT;
+        globalObject.setProperty(createTimerFunctionName, createTimerFunctionObject, kJSPropertyAttributeDontEnum);
+        globalObject.setProperty(deleteTimerFunctionName, deleteTimerFunctionObject, kJSPropertyAttributeDontEnum);
 
-        JSC::evaluateScriptFromString(JSC::GlobalContext::GetInstance(),
+        JSC::evaluateScriptFromString(
                     "function setTimeout(func, delay) {\n"
                     "    var cb_func;\n"
                     "    var bind_args;\n"

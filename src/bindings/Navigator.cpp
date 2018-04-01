@@ -22,8 +22,9 @@
 JSC_INITIALIZER(Navigator::Initializer)
 {
     size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
-    JSC::Object(ctx, object).setProperty("userAgent", JSC::String(ctx, OS_NAME));
+    JSC::Object instance = JSC::Object(object);
+    instance.setPrivate(index);
+    instance.setProperty("userAgent", JSC::Value(OS_NAME));
 }
 
 JSC_FINALIZER(Navigator::Finalizer)

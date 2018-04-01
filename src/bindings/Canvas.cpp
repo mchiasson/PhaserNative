@@ -4,10 +4,11 @@
 
 JSC_INITIALIZER(Canvas::Initializer) {
     size_t index = _AllocateInstance();
-    JSObjectSetPrivate(object, (void*)index);
-    JSC::Object(ctx, object).setProperty("2d", CanvasRenderingContext2D::Create(ctx));
-    JSC::Object(ctx, object).setProperty("webgl", WebGLRenderingContext::Create(ctx));
-    JSC::Object(ctx, object).setProperty("experimental-webgl", WebGLRenderingContext::Create(ctx));
+    JSC::Object instance = object;
+    instance.setPrivate(index);
+    instance.setProperty("2d", CanvasRenderingContext2D::Create());
+    instance.setProperty("webgl", WebGLRenderingContext::Create());
+    instance.setProperty("experimental-webgl", WebGLRenderingContext::Create());
 }
 
 JSC_FINALIZER(Canvas::Finalizer) {
@@ -16,9 +17,9 @@ JSC_FINALIZER(Canvas::Finalizer) {
 }
 
 JSC_FUNCTION(Canvas::getContext) {
-    JSC::String elementName = JSC::Value(ctx, argv[0]).toString();
-    JSValueRef contextObject = JSObjectGetProperty(ctx, object, elementName, exception);
-    return contextObject;
+    JSC::String elementName = JSC::Value(argv[0]).toString();
+    JSC::Object instance = object;
+    return instance.getProperty(elementName);
 }
 
 JSC::Class &Canvas::GetClassRef()
@@ -39,8 +40,7 @@ JSC::Class &Canvas::GetClassRef()
         _class = JSC::Class(&canvasClassDefinition);
 
         JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
-        JSC::Object globalObject = JSC::Object(ctx, JSContextGetGlobalObject(ctx));
-        globalObject.setProperty("HTMLCanvasElement", Create(ctx));
+        JSC_GLOBAL_OBJECT.setProperty("HTMLCanvasElement", Create());
     }
 
     return _class;

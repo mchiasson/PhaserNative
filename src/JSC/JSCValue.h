@@ -9,139 +9,70 @@
 namespace JSC
 {
 
-class Value : public boost::noncopyable
+class Value
 {
 public:
-    Value() : m_context(nullptr), m_value(nullptr) {}
-    Value(JSContextRef context, JSValueRef value);
-    Value(JSContextRef context, JSStringRef value);
 
-    Value(const Value &o) : Value(o.getContext(), o.m_value)
+    static Value MakeUndefined();
+    static Value MakeNull();
+    static Value MakeFromJSONString(const std::string& json);
+
+
+    Value() :
+        m_value(nullptr)
     {
-
     }
 
-    Value(const JSC::String &o) : Value(o.getContext(), o)
-    {
+    Value(JSValueRef value);
+    Value(bool value);
+    Value(double value);
+    Value(int32_t value);
+    Value(uint32_t value);
+    Value(const char * str);
+    Value(const std::string &str);
+    Value(JSStringRef str);
 
+    Value(const Value &o) :
+        m_value(o.m_value)
+    {
     }
 
-    Value& operator=(Value&& other)
+    Value& operator=(const Value& other)
     {
-        m_context = other.m_context;
         m_value = other.m_value;
-        other.m_value = NULL;
         return *this;
     };
 
-    operator JSValueRef() const
+
+    Value& operator=(Value&& other)
     {
-        return m_value;
-    }
+        m_value = other.m_value;
+        other.m_value = nullptr;
+        return *this;
+    };
 
-    JSType getType() const
-    {
-        return JSValueGetType(m_context, m_value);
-    }
+    operator JSValueRef() const;
 
-    bool isBoolean() const
-    {
-        return getType() == kJSTypeBoolean;
-    }
+    JSType getType() const;
+    bool isUndefined() const { return getType() == kJSTypeUndefined; }
+    bool isNull() const      { return getType() == kJSTypeNull; }
+    bool isBoolean() const   { return getType() == kJSTypeBoolean; }
+    bool isNumber() const    { return getType() == kJSTypeNumber; }
+    bool isString() const    { return getType() == kJSTypeString; }
+    bool isObject() const    { return getType() == kJSTypeObject; }
 
-    bool toBoolean() const
-    {
-        return JSValueToBoolean(getContext(), m_value);
-    }
-
-    bool isNumber() const
-    {
-        return getType() == kJSTypeNumber;
-    }
-
-    bool isNull() const
-    {
-        return getType() == kJSTypeNull;
-    }
-
-    bool isUndefined() const
-    {
-        return getType() == kJSTypeUndefined;
-    }
-
-    double toNumber() const
-    {
-        return JSValueToNumber(getContext(), m_value, nullptr);
-    }
-
-    int32_t toInteger() const
-    {
-        return static_cast<int32_t>(toNumber());
-    }
-
-    uint32_t asUnsignedInteger() const
-    {
-        return static_cast<uint32_t>(toNumber());
-    }
-
-    bool isObject() const
-    {
-        return getType() == kJSTypeObject;
-    }
-
-    JSC::Object toObject() const;
-
-    bool isString() const
-    {
-        return getType() == kJSTypeString;
-    }
-
+    bool toBoolean() const;
+    float toFloat() const;
+    double toDouble() const;
+    int32_t toInteger() const;
+    uint32_t toUnsignedInteger() const;
     JSC::String toString() const;
-
-    static Value MakeNumber(JSContextRef ctx, double value)
-    {
-        return Value(ctx, JSValueMakeNumber(ctx, value));
-    }
-
-    static Value MakeUndefined(JSContextRef ctx)
-    {
-        return Value(ctx, JSValueMakeUndefined(ctx));
-    }
-
-    static Value MakeNull(JSContextRef ctx)
-    {
-        return Value(ctx, JSValueMakeNull(ctx));
-    }
-
-    static Value MakeBoolean(JSContextRef ctx, bool value)
-    {
-        return Value(ctx, JSValueMakeBoolean(ctx, value));
-    }
-
-    static Value MakeString(JSContextRef ctx, const char* utf8)
-    {
-        return Value(ctx, JSC::String(ctx, utf8));
-    }
-
-    static Value MakeString(JSContextRef ctx, const std::string &utf8)
-    {
-        return MakeString(ctx, utf8.c_str());
-    }
+    JSC::Object toObject() const;
 
     std::string createJSONString(unsigned indent = 0) const;
 
-    static Value MakeFromJSONString(const JSC::String& json);
-
-    JSContextRef getContext() const
-    {
-        return m_context;
-    }
-
-
 private:
-    void throwTypeException(const std::string &expectedType) const;
 
-    JSContextRef m_context;
     JSValueRef m_value;
 };
 

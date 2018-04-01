@@ -16,117 +16,54 @@ class Object : public boost::noncopyable {
 public:
     using TimeType = std::chrono::time_point<std::chrono::system_clock>;
 
-    static Object MakeDefault(JSContextRef ctx);
-    static Object Make(JSContextRef ctx, JSClassRef jsClass, void* data = nullptr);
-    static Object MakeArray(JSContextRef ctx, JSValueRef* elements, unsigned length);
-    static Object MakeDate(JSContextRef ctx, TimeType time);
-    static Object MakeError(JSContextRef ctx, const char *error, const char *stack = nullptr);
+    static Object MakeDefault();
+    static Object Make(JSClassRef jsClass, void* data = nullptr);
+    static Object MakeArray(JSValueRef* elements, unsigned length);
+    static Object MakeTypedArray(JSTypedArrayType arrayType, size_t length);
+    static Object MakeTypedArrayWithBytesNoCopy(JSTypedArrayType arrayType, void* bytes, size_t byteLength, JSTypedArrayBytesDeallocator bytesDeallocator, void* deallocatorContext);
+    static Object MakeDate(TimeType time);
+    static Object MakeError(const char *error, const char *stack = nullptr);
 
-    static Object getGlobalObject(JSContextRef ctx)
-    {
-        return Object(ctx, JSContextGetGlobalObject(ctx));
-    }
+    static Object getGlobalObject();
 
-    explicit Object(JSContextRef context, JSObjectRef obj) :
-        m_context(context),
-        m_obj(obj)
-    {
-    }
+    Object() : m_obj(nullptr) {}
 
-    Object(Object&& other) :
-        m_context(other.m_context),
-        m_obj(other.m_obj),
-        m_isProtected(other.m_isProtected)
-    {
-        other.m_context = nullptr;
-        other.m_obj = nullptr;
-        other.m_isProtected = false;
-    }
+    Object(JSObjectRef obj);
+    Object(Object&& other);
+    ~Object();
 
-    ~Object()
-    {
-        if (m_obj)
-        {
-            if (m_isProtected)
-            {
-                JSValueUnprotect(m_context, m_obj);
-            }
-            m_obj = nullptr;
-        }
+    Object& operator=(Object&& other);
 
-        m_context = nullptr;
-    }
-
-    Object& operator=(Object&& other)
-    {
-        if (m_obj && m_isProtected)
-        {
-            JSValueUnprotect(m_context, m_obj);
-        }
-
-        m_context     = other.m_context;
-        m_obj         = other.m_obj;
-        m_isProtected = other.m_isProtected;
-
-        other.m_context = nullptr;
-        other.m_obj = nullptr;
-        other.m_isProtected = false;
-
-        return *this;
-    }
-
-    operator JSObjectRef() const
-    {
-        return m_obj;
-    }
-
+    operator JSObjectRef() const;
     operator Value() const;
 
-    bool isFunction() const
-    {
-        return m_obj ? JSObjectIsFunction(m_context, m_obj) : false;
-    }
+    bool isFunction() const;
     Value callAsFunction(std::initializer_list<JSValueRef> args) const;
-    Value callAsFunction(const Object& thisObj, std::initializer_list<JSValueRef> args) const;
+    Value callAsFunction(const Object& thiz, std::initializer_list<JSValueRef> args) const;
     Value callAsFunction(int nArgs, const JSValueRef args[]) const;
-    Value callAsFunction(const Object& thisObj, int nArgs, const JSValueRef args[]) const;
+    Value callAsFunction(const Object& thiz, int nArgs, const JSValueRef args[]) const;
 
 
-    bool isConstructor() const
-    {
-        return m_obj ? JSObjectIsConstructor(m_context, m_obj) : false;
-    }
-
+    bool isConstructor() const;
     Object callAsConstructor(std::initializer_list<JSValueRef> args) const;
 
     Value getProperty(const JSC::String& propName) const;
     Value getProperty(const char *propName) const;
     Value getPropertyAtIndex(unsigned int index) const;
-    void setProperty(const JSC::String& propName, const Value& value);
-    void setProperty(const char *propName, const Value& value);
-    void setReadOnlyProperty(const JSC::String& propName, const Value& value);
-    void setReadOnlyProperty(const char *propName, const Value& value);
+    void setProperty(const JSC::String& propName, const Value& value, JSPropertyAttributes attr = kJSPropertyAttributeNone);
+    void setProperty(const char *propName, const Value& value, JSPropertyAttributes attr = kJSPropertyAttributeNone);
     void setPropertyAtIndex(unsigned int index, const Value& value);
     std::vector<JSC::String> getPropertyNames() const;
     std::unordered_map<std::string, std::string> toJSONMap() const;
 
-    void protect()
-    {
-        if (m_obj && !m_isProtected)
-        {
-            JSValueProtect(m_context, m_obj);
-            m_isProtected = true;
-        }
-    }
+    void* getTypedArrayBytesPtr();
+    size_t getTypedArrayLength();
+    size_t getTypedArrayByteLength();
+    size_t getTypedArrayByteOffset();
+    Object getTypedArrayBuffer();
 
-    void unprotect()
-    {
-        if (m_obj && m_isProtected)
-        {
-            JSValueUnprotect(m_context, m_obj);
-            m_isProtected = false;
-        }
-    }
+    void protect();
+    void unprotect();
 
     template<typename T>
     T getPrivate() const
@@ -140,16 +77,9 @@ public:
         JSObjectSetPrivate(m_obj, reinterpret_cast<void*>(data));
     }
 
-    JSContextRef context() const
-    {
-        return m_context;
-    }
-
 
 private:
-    Value callAsFunction(JSObjectRef thisObj, int nArgs, const JSValueRef args[]) const;
 
-    JSContextRef m_context;
     JSObjectRef m_obj;
     bool m_isProtected = false;
 

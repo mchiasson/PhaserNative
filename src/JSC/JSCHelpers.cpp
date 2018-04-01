@@ -6,7 +6,7 @@
 namespace JSC
 {
 
-Value evaluateScriptFromFile(JSContextRef ctx, const char *path)
+Value evaluateScriptFromFile(const char *path)
 {
     FILE *f = NULL;
     Value retval;
@@ -19,7 +19,7 @@ Value evaluateScriptFromFile(JSContextRef ctx, const char *path)
     f = fopen(fnbuf, "rb");
     if (f)
     {
-        retval = evaluateScriptFromFileHandler(ctx, f, path);
+        retval = evaluateScriptFromFileHandler(f, path);
         fclose(f);
     }
     else
@@ -31,7 +31,7 @@ Value evaluateScriptFromFile(JSContextRef ctx, const char *path)
 
 }
 
-Value evaluateScriptFromFileHandler(JSContextRef ctx, FILE *f, const char *sourceURL)
+Value evaluateScriptFromFileHandler(FILE *f, const char *sourceURL)
 {
     char *buf = NULL;
     size_t bufsz;
@@ -75,7 +75,7 @@ Value evaluateScriptFromFileHandler(JSContextRef ctx, FILE *f, const char *sourc
     }
 
 
-    retval = evaluateScriptFromString(ctx, std::string(buf, bufoff), sourceURL);
+    retval = evaluateScriptFromString(std::string(buf, bufoff), sourceURL);
 
 cleanup:
     if (buf) {
@@ -85,18 +85,18 @@ cleanup:
     return retval;
 }
 
-Value evaluateScriptFromString(JSContextRef ctx, const std::string &script, const char *sourceURL)
+Value evaluateScriptFromString(const std::string &script, const char *sourceURL)
 {
-    return evaluateScript(ctx, String(ctx, script), String(ctx, sourceURL));
+    return evaluateScript(String(script), String(sourceURL));
 }
 
-Value evaluateScript(JSContextRef ctx, const String &scriptUTF8, const String &sourceURL)
+Value evaluateScript(const String &scriptUTF8, const String &sourceURL)
 {
     JSValueRef exception = nullptr;
-    Value result = Value(ctx, JSEvaluateScript(ctx, scriptUTF8, NULL, sourceURL, 0, &exception));
+    Value result = JSEvaluateScript(JSC_GLOBAL_CTX, scriptUTF8, NULL, sourceURL, 0, &exception);
     if (!result)
     {
-        throw Exception(ctx, exception, sourceURL);
+        throw Exception(exception, sourceURL);
     }
     return result;
 }

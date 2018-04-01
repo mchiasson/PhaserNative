@@ -1,80 +1,160 @@
 #include "JSCObject.h"
 #include "JSCValue.h"
 #include "JSCException.h"
+#include "JSCHelpers.h"
 
 #include <sstream>
 
 namespace JSC
 {
 
-Object Object::MakeDefault(JSContextRef ctx)
+Object Object::MakeDefault()
 {
-    return Object(ctx, JSObjectMake(ctx, nullptr, nullptr));
+    return JSObjectMake(JSC_GLOBAL_CTX, nullptr, nullptr);
 }
 
-
-Object Object::Make(JSContextRef ctx, JSClassRef jsClass, void* data)
+Object Object::Make(JSClassRef jsClass, void* data)
 {
-    return Object(ctx, JSObjectMake(ctx, jsClass, data));
+    return JSObjectMake(JSC_GLOBAL_CTX, jsClass, data);
 }
 
-Object Object::MakeArray(JSContextRef ctx, JSValueRef* elements, unsigned length)
+Object Object::MakeArray(JSValueRef* elements, unsigned length)
 {
-    JSValueRef exn;
-    Object arrayObject = Object(ctx, JSObjectMakeArray(ctx, length, elements, &exn));
+    JSValueRef exception;
+    Object arrayObject = JSObjectMakeArray(JSC_GLOBAL_CTX, length, elements, &exception);
     if (!arrayObject)
     {
-        throw JSC::Exception(ctx, exn, "Failed to create an Array");
+        throw Exception(exception, "Failed to create an Array");
     }
     return arrayObject;
 }
 
-Object Object::MakeDate(JSContextRef ctx, TimeType time)
+Object Object::MakeTypedArray(JSTypedArrayType arrayType, size_t length)
+{
+    JSValueRef exception;
+    Object typedArrayObject = JSObjectMakeTypedArray(JSC_GLOBAL_CTX, arrayType, length, &exception);
+    if (!typedArrayObject)
+    {
+        throw Exception(exception, "Failed to create a Typed Array");
+    }
+    return typedArrayObject;
+}
+
+Object Object::MakeTypedArrayWithBytesNoCopy(JSTypedArrayType arrayType, void* bytes, size_t byteLength, JSTypedArrayBytesDeallocator bytesDeallocator, void* deallocatorContext)
+{
+    JSValueRef exception;
+
+    Object typedArrayObject = JSObjectMakeTypedArrayWithBytesNoCopy(JSC_GLOBAL_CTX, arrayType, bytes, byteLength, bytesDeallocator, deallocatorContext, &exception);
+    if (!typedArrayObject)
+    {
+        throw Exception(exception, "Failed to create a Typed Array with bytes");
+    }
+    return typedArrayObject;
+}
+
+Object Object::MakeDate(TimeType time)
 {
     using std::chrono::duration_cast;
     using std::chrono::milliseconds;
 
     JSValueRef arguments[] =
     {
-        JSC::Value::MakeNumber(ctx, duration_cast<milliseconds>(time.time_since_epoch()).count())
+        Value(static_cast<double>(duration_cast<milliseconds>(time.time_since_epoch()).count()))
     };
 
-    JSValueRef exn;
-    Object dateObject = Object(ctx, JSObjectMakeDate(ctx, 1, arguments, &exn));
+    JSValueRef exception;
+    Object dateObject = JSObjectMakeDate(JSC_GLOBAL_CTX, 1, arguments, &exception);
     if (!dateObject)
     {
-        throw Exception(ctx, exn, "Failed to create Date");
+        throw Exception(exception, "Failed to create Date");
     }
     return dateObject;
 }
 
-Object Object::MakeError(JSContextRef ctx, const char *error, const char *stack)
+Object Object::MakeError(const char *error, const char *stack)
 {
-    auto errorMsg = Value(ctx, String(ctx, error));
-    JSValueRef args[] = {errorMsg};
     if (stack)
     {
-        Object errorConstructor = Object::getGlobalObject(ctx).getProperty("Error").toObject();
-        Object jsError = errorConstructor.callAsConstructor({errorMsg});
+        Object errorConstructor = JSC_GLOBAL_OBJECT.getProperty("Error").toObject();
+        Object jsError = errorConstructor.callAsConstructor({Value(error)});
         std::string fullStack = std::string(stack) + jsError.getProperty("stack").toString().getUTF8String();
-        jsError.setProperty("stack", String(ctx, fullStack.c_str()));
+        jsError.setProperty("stack", Value(fullStack));
         return jsError;
     }
     else
     {
-        JSValueRef exn;
-        Object errorObj = Object(ctx, JSObjectMakeError(ctx, 1, args, &exn));
+        JSValueRef args[] = {Value(error)};
+        JSValueRef exception;
+
+        Object errorObj = JSObjectMakeError(JSC_GLOBAL_CTX, 1, args, &exception);
         if (!errorObj)
         {
-            throw Exception(ctx, exn, "Exception making error");
+            throw Exception(exception, "Failed to create error"); // seriously?! lol!!!
         }
         return errorObj;
     }
 }
 
+Object::Object(JSObjectRef obj) :
+    m_obj(obj)
+{
+}
+
+Object::Object(Object&& other) :
+    m_obj(other.m_obj),
+    m_isProtected(other.m_isProtected)
+{
+    other.m_obj = nullptr;
+    other.m_isProtected = false;
+}
+
+
+Object::~Object()
+{
+    if (m_obj)
+    {
+        if (m_isProtected)
+        {
+            JSValueUnprotect(JSC_GLOBAL_CTX, m_obj);
+        }
+        m_obj = nullptr;
+    }
+}
+
+Object& Object::operator=(Object&& other)
+{
+    if (m_obj && m_isProtected)
+    {
+        JSValueUnprotect(JSC_GLOBAL_CTX, m_obj);
+    }
+
+    m_obj         = other.m_obj;
+    m_isProtected = other.m_isProtected;
+
+    other.m_obj = nullptr;
+    other.m_isProtected = false;
+
+    return *this;
+}
+
+Object Object::getGlobalObject()
+{
+    return JSContextGetGlobalObject(JSC_GLOBAL_CTX);
+}
+
+Object::operator JSObjectRef() const
+{
+    return m_obj;
+}
+
 Object::operator Value() const
 {
-    return Value(m_context, m_obj);
+    return Value(m_obj);
+}
+
+bool Object::isFunction() const
+{
+    return m_obj ? JSObjectIsFunction(JSC_GLOBAL_CTX, m_obj) : false;
 }
 
 Value Object::callAsFunction(std::initializer_list<JSValueRef> args) const
@@ -82,9 +162,9 @@ Value Object::callAsFunction(std::initializer_list<JSValueRef> args) const
     return callAsFunction(nullptr, args.size(), args.begin());
 }
 
-Value Object::callAsFunction(const Object& thisObj, std::initializer_list<JSValueRef> args) const
+Value Object::callAsFunction(const Object& thiz, std::initializer_list<JSValueRef> args) const
 {
-    return callAsFunction((JSObjectRef)thisObj, args.size(), args.begin());
+    return callAsFunction((JSObjectRef)thiz, args.size(), args.begin());
 }
 
 Value Object::callAsFunction(int nArgs, const JSValueRef args[]) const
@@ -92,112 +172,96 @@ Value Object::callAsFunction(int nArgs, const JSValueRef args[]) const
     return callAsFunction(nullptr, nArgs, args);
 }
 
-Value Object::callAsFunction(const Object& thisObj, int nArgs, const JSValueRef args[]) const
+Value Object::callAsFunction(const Object& thiz, int nArgs, const JSValueRef args[]) const
 {
-    return callAsFunction(static_cast<JSObjectRef>(thisObj), nArgs, args);
-}
-
-Value Object::callAsFunction(JSObjectRef thisObj, int nArgs, const JSValueRef args[]) const
-{
-    JSValueRef exn;
-    Value result = Value(m_context, JSObjectCallAsFunction(m_context, m_obj, thisObj, nArgs, args, &exn));
+    JSValueRef exception;
+    Value result = JSObjectCallAsFunction(JSC_GLOBAL_CTX, m_obj, thiz, nArgs, args, &exception);
     if (!result)
     {
-        throw JSC::Exception(m_context, exn, "Exception calling object as function");
+        throw Exception(exception, "Exception calling object as function");
     }
     return result;
+}
+
+bool Object::isConstructor() const
+{
+    return m_obj ? JSObjectIsConstructor(JSC_GLOBAL_CTX, m_obj) : false;
 }
 
 Object Object::callAsConstructor(std::initializer_list<JSValueRef> args) const
 {
-    JSValueRef exn;
-    Object result = Object(m_context, JSObjectCallAsConstructor(m_context, m_obj, args.size(), args.begin(), &exn));
+    JSValueRef exception;
+    Object result = JSObjectCallAsConstructor(JSC_GLOBAL_CTX, m_obj, args.size(), args.begin(), &exception);
     if (!result)
     {
-        throw JSC::Exception(m_context, exn, "Exception calling object as constructor");
+        throw Exception(exception, "Exception calling object as constructor");
     }
     return result;
 }
 
-Value Object::getProperty(const JSC::String& propName) const {
-    JSValueRef exn;
-    Value property = Value(m_context, JSObjectGetProperty(m_context, m_obj, propName, &exn));
+Value Object::getProperty(const String& propName) const {
+    JSValueRef exception;
+    Value property = JSObjectGetProperty(JSC_GLOBAL_CTX, m_obj, propName, &exception);
     if (!property)
     {
         std::stringstream ss;
         ss << "Failed to get property '" << propName.getUTF8String() << "'";
-        throw JSC::Exception(m_context, exn, ss.str());
+        throw Exception(exception, ss.str());
     }
-    return Value(m_context, property);
+    return property;
 }
 
 Value Object::getPropertyAtIndex(unsigned int index) const {
-    JSValueRef exn;
-    Value property = Value(m_context, JSObjectGetPropertyAtIndex(m_context, m_obj, index, &exn));
+    JSValueRef exception;
+    Value property = JSObjectGetPropertyAtIndex(JSC_GLOBAL_CTX, m_obj, index, &exception);
     if (!property)
     {
         std::stringstream ss;
         ss << "Failed to get property at index " << index;
-        throw JSC::Exception(m_context, exn, ss.str());
+        throw Exception(exception, ss.str());
     }
     return property;
 }
 
 Value Object::getProperty(const char *propName) const {
-    return getProperty(JSC::String(m_context, propName));
+    return getProperty(String(propName));
 }
 
-void Object::setProperty(const JSC::String& propName, const Value& value) {
-    JSValueRef exn = nullptr;
-    JSObjectSetProperty(m_context, m_obj, propName, value, kJSPropertyAttributeNone, &exn);
-    if (exn)
+void Object::setProperty(const String& propName, const Value& value, JSPropertyAttributes attr) {
+    JSValueRef exception = nullptr;
+    JSObjectSetProperty(JSC_GLOBAL_CTX, m_obj, propName, value, attr, &exception);
+    if (exception)
     {
         std::stringstream ss;
         ss << "Failed to set property '" << propName.getUTF8String() << "'";
-        throw JSC::Exception(m_context, exn, ss.str());
+        throw Exception(exception, ss.str());
     }
 }
 
-void Object::setProperty(const char *propName, const Value& value) {
-    setProperty(JSC::String(m_context, propName), value);
+void Object::setProperty(const char *propName, const Value& value, JSPropertyAttributes attr) {
+    setProperty(String(propName), value, attr);
 }
-
-void Object::setReadOnlyProperty(const JSC::String& propName, const Value& value) {
-    JSValueRef exn = nullptr;
-    JSObjectSetProperty(m_context, m_obj, propName, value, kJSPropertyAttributeReadOnly, &exn);
-    if (exn)
-    {
-        std::stringstream ss;
-        ss << "Failed to set property '" << propName.getUTF8String() << "'";
-        throw JSC::Exception(m_context, exn, ss.str());
-    }
-}
-
-void Object::setReadOnlyProperty(const char *propName, const Value& value) {
-    setReadOnlyProperty(JSC::String(m_context, propName), value);
-}
-
 
 void Object::setPropertyAtIndex(unsigned int index, const Value& value) {
-    JSValueRef exn = nullptr;
-    JSObjectSetPropertyAtIndex(m_context, m_obj, index, value, &exn);
-    if (exn)
+    JSValueRef exception = nullptr;
+    JSObjectSetPropertyAtIndex(JSC_GLOBAL_CTX, m_obj, index, value, &exception);
+    if (exception)
     {
         std::stringstream ss;
         ss << "Failed to set property at index " << index;
-        throw JSC::Exception(m_context, exn, ss.str());
+        throw Exception(exception, ss.str());
     }
 }
 
 
-std::vector<JSC::String> Object::getPropertyNames() const {
-    auto namesRef = JSObjectCopyPropertyNames(m_context, m_obj);
+std::vector<String> Object::getPropertyNames() const {
+    auto namesRef = JSObjectCopyPropertyNames(JSC_GLOBAL_CTX, m_obj);
     size_t count = JSPropertyNameArrayGetCount(namesRef);
-    std::vector<JSC::String> names;
+    std::vector<String> names;
     names.reserve(count);
     for (size_t i = 0; i < count; i++)
     {
-        names.push_back(JSC::String(m_context, JSPropertyNameArrayGetNameAtIndex(namesRef, i)));
+        names.push_back(String(JSPropertyNameArrayGetNameAtIndex(namesRef, i)));
     }
     JSPropertyNameArrayRelease(namesRef);
     return names;
@@ -205,15 +269,93 @@ std::vector<JSC::String> Object::getPropertyNames() const {
 
 std::unordered_map<std::string, std::string> Object::toJSONMap() const {
     std::unordered_map<std::string, std::string> map;
-    auto namesRef = JSObjectCopyPropertyNames(m_context, m_obj);
+    auto namesRef = JSObjectCopyPropertyNames(JSC_GLOBAL_CTX, m_obj);
     size_t count = JSPropertyNameArrayGetCount(namesRef);
     for (size_t i = 0; i < count; i++)
     {
-        auto key = JSC::String(m_context, JSPropertyNameArrayGetNameAtIndex(namesRef, i));
+        auto key = String(JSPropertyNameArrayGetNameAtIndex(namesRef, i));
         map.emplace(key.getUTF8String(), getProperty(key).createJSONString());
     }
     JSPropertyNameArrayRelease(namesRef);
     return map;
+}
+
+void* Object::getTypedArrayBytesPtr()
+{
+    void* ptr;
+    JSValueRef exception;
+    ptr = JSObjectGetTypedArrayBytesPtr(JSC_GLOBAL_CTX, m_obj, &exception);
+    if (!ptr)
+    {
+        throw Exception(exception, "Failed to get Typed Array bytes pointer");
+    }
+    return ptr;
+}
+
+size_t Object::getTypedArrayLength()
+{
+    size_t length;
+    JSValueRef exception;
+    length = JSObjectGetTypedArrayLength(JSC_GLOBAL_CTX, m_obj, &exception);
+    if (!length)
+    {
+        throw Exception(exception, "Failed to get Typed Array length");
+    }
+    return length;
+}
+
+size_t Object::getTypedArrayByteLength()
+{
+    size_t length;
+    JSValueRef exception;
+    length = JSObjectGetTypedArrayByteLength(JSC_GLOBAL_CTX, m_obj, &exception);
+    if (!length)
+    {
+        throw Exception(exception, "Failed to get Typed Array byte length");
+    }
+    return length;
+}
+
+size_t Object::getTypedArrayByteOffset()
+{
+    size_t offset;
+    JSValueRef exception;
+    offset = JSObjectGetTypedArrayByteOffset(JSC_GLOBAL_CTX, m_obj, &exception);
+    if (!offset)
+    {
+        throw Exception(exception, "Failed to get Typed Array byte offset");
+    }
+    return offset;
+}
+
+Object Object::getTypedArrayBuffer()
+{
+    JSValueRef exception;
+    Object buffer = JSObjectGetTypedArrayBuffer(JSC_GLOBAL_CTX, m_obj, &exception);
+    if (!buffer)
+    {
+        throw Exception(exception, "Failed to get Typed Array buffer");
+    }
+    return buffer;
+}
+
+
+void Object::protect()
+{
+    if (m_obj && !m_isProtected)
+    {
+        JSValueProtect(JSC_GLOBAL_CTX, m_obj);
+        m_isProtected = true;
+    }
+}
+
+void Object::unprotect()
+{
+    if (m_obj && m_isProtected)
+    {
+        JSValueUnprotect(JSC_GLOBAL_CTX, m_obj);
+        m_isProtected = false;
+    }
 }
 
 }
