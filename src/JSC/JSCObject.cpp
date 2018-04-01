@@ -100,12 +100,17 @@ Object::Object(JSObjectRef obj) :
 {
 }
 
-Object::Object(Object&& other) :
+Object::Object(const Object& other) :
     m_obj(other.m_obj),
     m_isProtected(other.m_isProtected)
 {
-    other.m_obj = nullptr;
-    other.m_isProtected = false;
+
+}
+
+Object::Object(Object&& other) :
+    m_obj(std::move(other.m_obj)),
+    m_isProtected(std::move(other.m_isProtected))
+{
 }
 
 
@@ -135,6 +140,16 @@ Object& Object::operator=(Object&& other)
     other.m_isProtected = false;
 
     return *this;
+}
+
+bool Object::operator==(const Object &other)
+{
+    return JSValueIsStrictEqual(JSC_GLOBAL_CTX, m_obj, other.m_obj);
+}
+
+bool Object::operator!=(const Object &other)
+{
+    return !operator==(other);
 }
 
 Object Object::getGlobalObject()

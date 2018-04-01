@@ -51,6 +51,9 @@ public:
         return *this;
     };
 
+    bool operator==(const Value &other);
+    bool operator!=(const Value &other);
+
     operator JSValueRef() const;
 
     JSType getType() const;
@@ -66,8 +69,8 @@ public:
     double toDouble() const;
     int32_t toInteger() const;
     uint32_t toUnsignedInteger() const;
-    JSC::String toString() const;
-    JSC::Object toObject() const;
+    String toString() const;
+    Object toObject() const;
 
     std::string createJSONString(unsigned indent = 0) const;
 

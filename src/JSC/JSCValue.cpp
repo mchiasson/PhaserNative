@@ -71,6 +71,17 @@ Value::Value(JSStringRef str) :
 
 }
 
+bool Value::operator==(const Value &other)
+{
+    // string means '===' in javascript
+    return JSValueIsStrictEqual(JSC_GLOBAL_CTX, m_value, other.m_value);
+}
+
+bool Value::operator!=(const Value &other)
+{
+    return !operator==(other);
+}
+
 Value::operator JSValueRef() const
 {
     return m_value;

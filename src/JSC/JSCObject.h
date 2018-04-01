@@ -12,7 +12,7 @@ namespace JSC
 
 class Value;
 
-class Object : public boost::noncopyable {
+class Object {
 public:
     using TimeType = std::chrono::time_point<std::chrono::system_clock>;
 
@@ -26,13 +26,16 @@ public:
 
     static Object getGlobalObject();
 
-    Object() : m_obj(nullptr) {}
+    Object() {}
 
     Object(JSObjectRef obj);
+    Object(const Object& other);
     Object(Object&& other);
     ~Object();
 
     Object& operator=(Object&& other);
+    bool operator==(const Object &other);
+    bool operator!=(const Object &other);
 
     operator JSObjectRef() const;
     operator Value() const;
@@ -80,7 +83,7 @@ public:
 
 private:
 
-    JSObjectRef m_obj;
+    JSObjectRef m_obj = nullptr;
     bool m_isProtected = false;
 
 };

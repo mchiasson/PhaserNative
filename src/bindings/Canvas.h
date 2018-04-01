@@ -17,5 +17,7 @@ private:
     static JSC_FINALIZER(Finalizer);
 
     static JSC_FUNCTION(getContext);
+    static JSC_FUNCTION(addEventListener);
+    static JSC_FUNCTION(removeEventListener);
 };
 
