@@ -158,6 +158,26 @@ void Object::setProperty(const JSC::String& propName, const Value& value) {
     }
 }
 
+void Object::setProperty(const char *propName, const Value& value) {
+    setProperty(JSC::String(m_context, propName), value);
+}
+
+void Object::setReadOnlyProperty(const JSC::String& propName, const Value& value) {
+    JSValueRef exn = nullptr;
+    JSObjectSetProperty(m_context, m_obj, propName, value, kJSPropertyAttributeReadOnly, &exn);
+    if (exn)
+    {
+        std::stringstream ss;
+        ss << "Failed to set property '" << propName.getUTF8String() << "'";
+        throw JSC::Exception(m_context, exn, ss.str());
+    }
+}
+
+void Object::setReadOnlyProperty(const char *propName, const Value& value) {
+    setReadOnlyProperty(JSC::String(m_context, propName), value);
+}
+
+
 void Object::setPropertyAtIndex(unsigned int index, const Value& value) {
     JSValueRef exn = nullptr;
     JSObjectSetPropertyAtIndex(m_context, m_obj, index, value, &exn);
@@ -169,9 +189,6 @@ void Object::setPropertyAtIndex(unsigned int index, const Value& value) {
     }
 }
 
-void Object::setProperty(const char *propName, const Value& value) {
-    setProperty(JSC::String(m_context, propName), value);
-}
 
 std::vector<JSC::String> Object::getPropertyNames() const {
     auto namesRef = JSObjectCopyPropertyNames(m_context, m_obj);

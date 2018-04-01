@@ -8,7 +8,6 @@
 #include "bindings/Console.h"
 #include "bindings/Document.h"
 #include "bindings/Image.h"
-#include "bindings/Timer.h"
 #include "bindings/Navigator.h"
 #include "bindings/Window.h"
 #include "bindings/Phaser.h"
@@ -49,6 +48,7 @@ int PhaserNativeApp::run(int argc, char* argv[])
     JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
     JSC::Object globalObject = JSC::Object::getGlobalObject(ctx);
 
+    globalObject.setProperty("console", Console::Create(ctx));
     globalObject.setProperty("window", Window::Create(ctx));
     globalObject.setProperty("navigator", Navigator::Create(ctx));
     globalObject.setProperty("document", Document::Create(ctx));

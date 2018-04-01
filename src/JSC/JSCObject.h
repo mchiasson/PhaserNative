@@ -104,6 +104,8 @@ public:
     Value getPropertyAtIndex(unsigned int index) const;
     void setProperty(const JSC::String& propName, const Value& value);
     void setProperty(const char *propName, const Value& value);
+    void setReadOnlyProperty(const JSC::String& propName, const Value& value);
+    void setReadOnlyProperty(const char *propName, const Value& value);
     void setPropertyAtIndex(unsigned int index, const Value& value);
     std::vector<JSC::String> getPropertyNames() const;
     std::unordered_map<std::string, std::string> toJSONMap() const;

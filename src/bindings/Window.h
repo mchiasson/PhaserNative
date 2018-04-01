@@ -13,4 +13,7 @@ private:
     static JSC_INITIALIZER(Initializer);
     static JSC_FINALIZER(Finalizer);
 
+    static JSC_FUNCTION(createTimer);
+    static JSC_FUNCTION(deleteTimer);
+
 };

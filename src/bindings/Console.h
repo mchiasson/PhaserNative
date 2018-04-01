@@ -7,7 +7,7 @@
 class Console : public JSC::Binding<Console>
 {
 public:
-    static void Register(JSContextRef ctx);
+    static JSC::Class &GetClassRef();
 private:
     static JSC_INITIALIZER(Initializer);
     static JSC_FINALIZER(Finalizer);

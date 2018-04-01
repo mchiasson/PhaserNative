@@ -56,8 +56,6 @@ add_executable(${PROJECT_NAME}
     src/bindings/Phaser.h
     src/bindings/Performance.cpp
     src/bindings/Performance.h
-    src/bindings/Timer.cpp
-    src/bindings/Timer.h
     src/bindings/Window.cpp
     src/bindings/Window.h
 

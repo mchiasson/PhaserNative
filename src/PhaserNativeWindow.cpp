@@ -203,14 +203,16 @@ void PhaserNativeWindow::render()
     m_currentTime = SDL_GetPerformanceCounter();
     m_deltaTime = m_currentTime - m_prevTime;
 
+
     float gpuTimes[3];
+
+    SDL_GL_MakeCurrent(window, context);
 
     int fbWidth, fbHeight;
     SDL_GL_GetDrawableSize(window, &fbWidth, &fbHeight);
 
     startGPUTimer(&gpuTimer);
 
-    SDL_GL_MakeCurrent(window, context);
 
     glViewport(0, 0, fbWidth, fbHeight);
     glClearColor(m_backgroundColor[0], m_backgroundColor[1], m_backgroundColor[2], m_backgroundColor[3]);

@@ -78,30 +78,26 @@ JSC_FUNCTION(Console::error) {
     return JSC::Value::MakeUndefined(ctx);
 }
 
-void Console::Register(JSContextRef ctx)
+JSC::Class &Console::GetClassRef()
 {
+    if (!_class) {
 
-    static JSStaticFunction staticFunctions[] = {
-        { "log", Console::log, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
-        { "info", Console::info, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
-        { "warn", Console::warn, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
-        { "error", Console::error, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
-        { 0, 0, 0 }
-    };
+        static JSStaticFunction staticFunctions[] = {
+            { "log", Console::log, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "info", Console::info, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "warn", Console::warn, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "error", Console::error, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { 0, 0, 0 }
+        };
 
-    JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
-    classDefinition.className = "Console";
-    classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
-    classDefinition.staticFunctions = staticFunctions;
-    classDefinition.initialize = Console::Initializer;
-    classDefinition.finalize = Console::Finalizer;
-    _class = JSC::Class(&classDefinition);
+        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
+        classDefinition.className = "Console";
+        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
+        classDefinition.staticFunctions = staticFunctions;
+        classDefinition.initialize = Console::Initializer;
+        classDefinition.finalize = Console::Finalizer;
+        _class = JSC::Class(&classDefinition);
+    }
 
-    // Register global instance
-    JSC::String propertyName = JSC::String(ctx, "console");
-    JSObjectSetProperty(ctx,
-                        JSContextGetGlobalObject(ctx),
-                        propertyName,
-                        JSC::Object::Make(ctx, _class),
-                        kJSPropertyAttributeDontDelete, nullptr);
+    return _class;
 }

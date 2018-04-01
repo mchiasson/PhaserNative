@@ -14,6 +14,8 @@ private:
     static JSC_FINALIZER(Finalizer);
 
     static JSC_FUNCTION(fillRect);
+    static JSC_FUNCTION(getImageData);
+    static JSC_FUNCTION(putImageData);
 
     JSC_RW_PROPERTY(fillStyle);
 
