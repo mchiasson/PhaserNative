@@ -38,6 +38,8 @@ add_executable(${PROJECT_NAME}
     src/PhaserNativeWindow.cpp
 
     ### Javascript Bindings
+    src/bindings/Body.cpp
+    src/bindings/Body.h
     src/bindings/Canvas.cpp
     src/bindings/Canvas.h
     src/bindings/CanvasRenderingContext2D.cpp

@@ -19,5 +19,6 @@ private:
     static JSC_FUNCTION(getContext);
     static JSC_FUNCTION(addEventListener);
     static JSC_FUNCTION(removeEventListener);
+    static JSC_FUNCTION(getBoundingClientRect);
 };
 

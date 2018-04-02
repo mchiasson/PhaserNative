@@ -2,6 +2,7 @@
 #include "CanvasRenderingContext2D.h"
 #include "WebGLRenderingContext.h"
 #include "PhaserNativeEvent.h"
+#include "PhaserNativeWindow.h"
 
 JSC_INITIALIZER(Canvas::Initializer) {
     Canvas &instance = _CreateInstance(object);
@@ -44,25 +45,47 @@ JSC_FUNCTION(Canvas::removeEventListener)
     return JSC::Value::MakeUndefined();
 }
 
+JSC_FUNCTION(Canvas::getBoundingClientRect) {
+
+    int x, y;
+    SDL_GetWindowPosition(PhaserNativeWindow::window, &x, &y);
+
+    int w, h;
+    SDL_GetWindowSize(PhaserNativeWindow::window, &w, &h);
+
+    JSC::Object rect = JSC::Object::MakeDefault();
+    rect.setProperty("x", JSC::Value(x), kJSPropertyAttributeReadOnly);
+    rect.setProperty("y", JSC::Value(y), kJSPropertyAttributeReadOnly);
+    rect.setProperty("width", JSC::Value(w), kJSPropertyAttributeReadOnly);
+    rect.setProperty("height", JSC::Value(h), kJSPropertyAttributeReadOnly);
+    rect.setProperty("top", JSC::Value(h > 0 ? y : y+h), kJSPropertyAttributeReadOnly);
+    rect.setProperty("right", JSC::Value(w > 0 ? x+w : x), kJSPropertyAttributeReadOnly);
+    rect.setProperty("bottom", JSC::Value(h > 0 ? y+h : y), kJSPropertyAttributeReadOnly);
+    rect.setProperty("left", JSC::Value(w > 0 ? x : x+w), kJSPropertyAttributeReadOnly);
+
+    return rect;
+}
+
 
 JSC::Class &Canvas::GetClassRef()
 {
     if (!_class)
     {
-        static JSStaticFunction canvasStaticFunctions[] = {
+        static JSStaticFunction staticFunctions[] = {
             { "getContext", Canvas::getContext, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "addEventListener", Canvas::addEventListener, kJSPropertyAttributeDontDelete },
-            { "removeEventListener", Canvas::getContext, kJSPropertyAttributeDontDelete },
+            { "removeEventListener", Canvas::removeEventListener, kJSPropertyAttributeDontDelete },
+            { "getBoundingClientRect", Canvas::getBoundingClientRect, kJSPropertyAttributeDontDelete },
             { 0, 0, 0 }
         };
 
-        JSClassDefinition canvasClassDefinition = kJSClassDefinitionEmpty;
-        canvasClassDefinition.className = "HTMLCanvasElement";
-        canvasClassDefinition.attributes = kJSClassAttributeNone;
-        canvasClassDefinition.staticFunctions = canvasStaticFunctions;
-        canvasClassDefinition.initialize = Canvas::Initializer;
-        canvasClassDefinition.finalize = Canvas::Finalizer;
-        _class = JSC::Class(&canvasClassDefinition);
+        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
+        classDefinition.className = "HTMLCanvasElement";
+        classDefinition.attributes = kJSClassAttributeNone;
+        classDefinition.staticFunctions = staticFunctions;
+        classDefinition.initialize = Canvas::Initializer;
+        classDefinition.finalize = Canvas::Finalizer;
+        _class = JSC::Class(&classDefinition);
 
         JSC_GLOBAL_OBJECT.setProperty("HTMLCanvasElement", Create());
     }

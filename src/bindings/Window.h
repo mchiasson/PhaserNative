@@ -16,4 +16,8 @@ private:
     static JSC_FUNCTION(createTimer);
     static JSC_FUNCTION(deleteTimer);
 
+    static JSC_FUNCTION(addEventListener);
+    static JSC_FUNCTION(removeEventListener);
+
+
 };

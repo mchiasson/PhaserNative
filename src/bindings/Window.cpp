@@ -83,16 +83,47 @@ JSC_FUNCTION(Window::deleteTimer) {
     return JSC::Value::MakeUndefined();
 }
 
+JSC_FUNCTION(Window::addEventListener)
+{
+    JSC::Value type = argv[0];
+    JSC::Object listener = JSC::Value(argv[1]).toObject();
+
+    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[type.toString().getUTF8String()];
+    listeners.insert(listener);
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(Window::removeEventListener)
+{
+    JSC::Value type = argv[0];
+    JSC::Object listener = JSC::Value(argv[1]).toObject();
+
+    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[type.toString().getUTF8String()];
+    auto it = listeners.find(listener);
+    if (it != listeners.end())
+    {
+        listeners.erase(it);
+    }
+    return JSC::Value::MakeUndefined();
+}
+
 JSC::Class &Window::GetClassRef()
 {
     if (!_class)
     {
-        JSClassDefinition windowClassDefinition = kJSClassDefinitionEmpty;
-        windowClassDefinition.className = "Window";
-        windowClassDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
-        windowClassDefinition.initialize = Window::Initializer;
-        windowClassDefinition.finalize = Window::Finalizer;
-        _class = JSC::Class(&windowClassDefinition);
+        static JSStaticFunction staticFunctions[] = {
+            { "addEventListener", Window::addEventListener, kJSPropertyAttributeDontDelete },
+            { "removeEventListener", Window::removeEventListener, kJSPropertyAttributeDontDelete },
+            { 0, 0, 0 }
+        };
+
+        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
+        classDefinition.className = "Window";
+        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
+        classDefinition.staticFunctions = staticFunctions;
+        classDefinition.initialize = Window::Initializer;
+        classDefinition.finalize = Window::Finalizer;
+        _class = JSC::Class(&classDefinition);
 
         JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
 

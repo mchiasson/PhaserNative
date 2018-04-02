@@ -21,6 +21,9 @@
 #define JSC_FUNCTION(_FUNC_NAME_) \
     JSValueRef _FUNC_NAME_(JSContextRef ctx, JSObjectRef function, JSObjectRef object, size_t argc, const JSValueRef argv[], JSValueRef* exception)
 
+#define JSC_CONSTANT(_CONST_NAME_) \
+    [](JSContextRef, JSObjectRef, JSStringRef, JSValueRef*) -> JSValueRef { return JSC::Value(_CONST_NAME_); }, nullptr, kJSPropertyAttributeReadOnly
+
 #define JSC_RW_PROPERTY(_NAME_)\
     static JSValueRef get_##_NAME_(JSContextRef ctx, JSObjectRef object, JSStringRef /*propertyName*/, JSValueRef* exception) {\
         size_t index = (size_t)JSObjectGetPrivate(object);\

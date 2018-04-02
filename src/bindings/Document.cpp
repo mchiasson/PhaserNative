@@ -3,11 +3,13 @@
 
 #include "DocumentElement.h"
 #include "Canvas.h"
+#include "Body.h"
 
 JSC_INITIALIZER(Document::Initializer)
 {
     Document &instance = _CreateInstance(object);
 
+    instance.object.setProperty("body", Body::Create());
     instance.object.setProperty("documentElement", DocumentElement::Create());
     instance.object.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
 }
@@ -28,7 +30,6 @@ JSC_FUNCTION(Document::createElement) {
         SDL_LogWarn(0, "Document.createElement('%s') is currently not supported.", elementName.getUTF8String().c_str());
         return JSC::Object::MakeDefault();
     }
-
 }
 
 JSC::Class &Document::GetClassRef()

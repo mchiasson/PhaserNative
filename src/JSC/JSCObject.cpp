@@ -52,6 +52,18 @@ Object Object::MakeTypedArrayWithBytesNoCopy(JSTypedArrayType arrayType, void* b
     return typedArrayObject;
 }
 
+Object Object::MakeArrayBufferWithBytesNoCopy(void* bytes, size_t byteLength, JSTypedArrayBytesDeallocator bytesDeallocator, void* deallocatorContext)
+{
+    JSValueRef exception;
+
+    Object arrayBuffer = JSObjectMakeArrayBufferWithBytesNoCopy(JSC_GLOBAL_CTX, bytes, byteLength, bytesDeallocator, deallocatorContext, &exception);
+    if (!arrayBuffer)
+    {
+        throw Exception(exception, "Failed to create a Typed Array with bytes");
+    }
+    return arrayBuffer;
+}
+
 Object Object::MakeDate(TimeType time)
 {
     using std::chrono::duration_cast;
@@ -352,6 +364,29 @@ Object Object::getTypedArrayBuffer()
         throw Exception(exception, "Failed to get Typed Array buffer");
     }
     return buffer;
+}
+
+void* Object::getArrayBufferBytesPtr()
+{
+    JSValueRef exception;
+    void* ptr = JSObjectGetArrayBufferBytesPtr(JSC_GLOBAL_CTX, m_obj, &exception);
+    if (!ptr)
+    {
+        throw Exception(exception, "Failed to get Typed Array buffer");
+    }
+    return ptr;
+}
+
+size_t Object::getArrayBufferByteLength()
+{
+    size_t length;
+    JSValueRef exception;
+    length = JSObjectGetArrayBufferByteLength(JSC_GLOBAL_CTX, m_obj, &exception);
+    if (!length)
+    {
+        throw Exception(exception, "Failed to get Typed Array byte length");
+    }
+    return length;
 }
 
 

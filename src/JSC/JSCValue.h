@@ -28,12 +28,19 @@ public:
     Value(double value);
     Value(int32_t value);
     Value(uint32_t value);
+    Value(int64_t value);
+    Value(uint64_t value);
     Value(const char * str);
     Value(const std::string &str);
     Value(JSStringRef str);
 
     Value(const Value &o) :
         m_value(o.m_value)
+    {
+    }
+
+    Value(const Object &o) :
+        m_value(o.m_obj)
     {
     }
 
@@ -69,8 +76,45 @@ public:
     double toDouble() const;
     int32_t toInteger() const;
     uint32_t toUnsignedInteger() const;
+    int64_t toLongInteger() const;
+    uint64_t toUnsignedLongInteger() const;
     String toString() const;
     Object toObject() const;
+
+    operator bool() const
+    {
+        return (m_value != nullptr);
+    }
+
+    operator float() const
+    {
+        return toFloat();
+    }
+
+    operator double() const
+    {
+        return toDouble();
+    }
+
+    operator int32_t() const
+    {
+        return toInteger();
+    }
+
+    operator uint32_t() const
+    {
+        return toUnsignedInteger();
+    }
+
+    operator int64_t() const
+    {
+        return toLongInteger();
+    }
+
+    operator uint64_t() const
+    {
+        return toUnsignedLongInteger();
+    }
 
     std::string createJSONString(unsigned indent = 0) const;
 

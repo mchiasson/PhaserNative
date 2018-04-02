@@ -13,6 +13,7 @@ namespace JSC
 class Value;
 
 class Object {
+    friend class Value;
 public:
     using TimeType = std::chrono::time_point<std::chrono::system_clock>;
 
@@ -21,6 +22,7 @@ public:
     static Object MakeArray(JSValueRef* elements, unsigned length);
     static Object MakeTypedArray(JSTypedArrayType arrayType, size_t length);
     static Object MakeTypedArrayWithBytesNoCopy(JSTypedArrayType arrayType, void* bytes, size_t byteLength, JSTypedArrayBytesDeallocator bytesDeallocator, void* deallocatorContext);
+    static Object MakeArrayBufferWithBytesNoCopy(void* bytes, size_t byteLength, JSTypedArrayBytesDeallocator bytesDeallocator, void* deallocatorContext);
     static Object MakeDate(TimeType time);
     static Object MakeError(const char *error, const char *stack = nullptr);
 
@@ -64,6 +66,9 @@ public:
     size_t getTypedArrayByteLength();
     size_t getTypedArrayByteOffset();
     Object getTypedArrayBuffer();
+
+    void* getArrayBufferBytesPtr();
+    size_t getArrayBufferByteLength();
 
     void protect();
     void unprotect();

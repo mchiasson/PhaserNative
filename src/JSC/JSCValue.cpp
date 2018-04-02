@@ -52,6 +52,16 @@ Value::Value(uint32_t value) :
 
 }
 
+Value::Value(int64_t value) :
+    m_value(JSValueMakeNumber(JSC_GLOBAL_CTX, value))
+{
+
+}
+Value::Value(uint64_t value) :
+    m_value(JSValueMakeNumber(JSC_GLOBAL_CTX, value))
+{
+
+}
 
 Value::Value(const char * str) :
     m_value(JSValueMakeString(JSC_GLOBAL_CTX, JSC::String(str)))
@@ -130,11 +140,10 @@ float Value::toFloat() const
 
 double Value::toDouble() const
 {
-    JSValueRef exception;
-    double value = JSValueToNumber(JSC_GLOBAL_CTX, m_value, &exception);
+    double value = JSValueToNumber(JSC_GLOBAL_CTX, m_value, nullptr);
     if (isnan(value))
     {
-        throw Exception(exception, "Failed to convert to number");
+        throw Exception("Failed to convert to number");
     }
     return value;
 
@@ -150,6 +159,16 @@ int32_t Value::toInteger() const
 uint32_t Value::toUnsignedInteger() const
 {
     return static_cast<uint32_t>(toDouble());
+}
+
+int64_t Value::toLongInteger() const
+{
+    return static_cast<int64_t>(toDouble());
+}
+
+uint64_t Value::toUnsignedLongInteger() const
+{
+    return static_cast<uint64_t>(toDouble());
 }
 
 Object Value::toObject() const
