@@ -26,7 +26,9 @@ JSC_FUNCTION(Canvas::addEventListener)
     JSC::Value type = argv[0];
     JSC::Object listener = JSC::Value(argv[1]).toObject();
 
-    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[type.toString().getUTF8String()];
+    std::string typeStr = type.toString().getUTF8String();
+    SDL_Log("Registering listener for '%s'", typeStr.c_str());
+    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[typeStr];
     listeners.insert(listener);
     return JSC::Value::MakeUndefined();
 }
@@ -36,7 +38,9 @@ JSC_FUNCTION(Canvas::removeEventListener)
     JSC::Value type = argv[0];
     JSC::Object listener = JSC::Value(argv[1]).toObject();
 
-    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[type.toString().getUTF8String()];
+    std::string typeStr = type.toString().getUTF8String();
+    SDL_Log("Unregistering listener for '%s'", typeStr.c_str());
+    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[typeStr];
     auto it = listeners.find(listener);
     if (it != listeners.end())
     {

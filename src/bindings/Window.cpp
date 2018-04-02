@@ -2,6 +2,8 @@
 #include "Performance.h"
 
 #include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_log.h>
+
 #include "PhaserNativeEvent.h"
 #include "WebGLRenderingContext.h"
 
@@ -88,7 +90,9 @@ JSC_FUNCTION(Window::addEventListener)
     JSC::Value type = argv[0];
     JSC::Object listener = JSC::Value(argv[1]).toObject();
 
-    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[type.toString().getUTF8String()];
+    std::string typeStr = type.toString().getUTF8String();
+    SDL_Log("Registering listener for '%s'", typeStr.c_str());
+    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[typeStr];
     listeners.insert(listener);
     return JSC::Value::MakeUndefined();
 }
@@ -98,7 +102,9 @@ JSC_FUNCTION(Window::removeEventListener)
     JSC::Value type = argv[0];
     JSC::Object listener = JSC::Value(argv[1]).toObject();
 
-    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[type.toString().getUTF8String()];
+    std::string typeStr = type.toString().getUTF8String();
+    SDL_Log("Unregistering listener for '%s'", typeStr.c_str());
+    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[typeStr];
     auto it = listeners.find(listener);
     if (it != listeners.end())
     {
@@ -111,6 +117,14 @@ JSC::Class &Window::GetClassRef()
 {
     if (!_class)
     {
+        static JSStaticValue staticValues[] = {
+
+            {"pageXOffset", JSC_CONSTANT(0)},
+            {"pageYOffset", JSC_CONSTANT(0)},
+
+            {0, 0, 0, 0}
+        };
+
         static JSStaticFunction staticFunctions[] = {
             { "addEventListener", Window::addEventListener, kJSPropertyAttributeDontDelete },
             { "removeEventListener", Window::removeEventListener, kJSPropertyAttributeDontDelete },
@@ -121,6 +135,7 @@ JSC::Class &Window::GetClassRef()
         classDefinition.className = "Window";
         classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
         classDefinition.staticFunctions = staticFunctions;
+        classDefinition.staticValues = staticValues;
         classDefinition.initialize = Window::Initializer;
         classDefinition.finalize = Window::Finalizer;
         _class = JSC::Class(&classDefinition);
