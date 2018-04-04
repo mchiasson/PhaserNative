@@ -5,14 +5,21 @@
 #include "PhaserNativeWindow.h"
 
 JSC_INITIALIZER(Canvas::Initializer) {
-    Canvas &instance = _CreateInstance(object);
-    instance.object.setProperty("2d", CanvasRenderingContext2D::Create());
-    instance.object.setProperty("webgl", WebGLRenderingContext::Create());
-    instance.object.setProperty("experimental-webgl", WebGLRenderingContext::Create());
+    Canvas &instance = CreateInstance(object);
+
+    JSC::Object canvas2d = CanvasRenderingContext2D::CreateObject();
+    JSC::Object gl = WebGLRenderingContext::CreateObject();
+
+    canvas2d.setProperty("canvas", instance.object);
+    gl.setProperty("canvas", instance.object);
+
+    instance.object.setProperty("2d", canvas2d);
+    instance.object.setProperty("webgl", gl);
+    instance.object.setProperty("experimental-webgl", gl);
 }
 
 JSC_FINALIZER(Canvas::Finalizer) {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(Canvas::getContext) {
@@ -91,7 +98,7 @@ JSC::Class &Canvas::GetClassRef()
         classDefinition.finalize = Canvas::Finalizer;
         _class = JSC::Class(&classDefinition);
 
-        JSC_GLOBAL_OBJECT.setProperty("HTMLCanvasElement", Create());
+        JSC_GLOBAL_OBJECT.setProperty("HTMLCanvasElement", CreateObject());
     }
 
     return _class;

@@ -4,12 +4,12 @@
 
 JSC_INITIALIZER(Console::Initializer)
 {
-    _CreateInstance(object);
+    CreateInstance(object);
 }
 
 JSC_FINALIZER(Console::Finalizer)
 {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(Console::log) {

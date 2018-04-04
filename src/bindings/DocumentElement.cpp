@@ -2,12 +2,12 @@
 
 JSC_INITIALIZER(DocumentElement::Initializer)
 {
-    _CreateInstance(object);
+    CreateInstance(object);
 }
 
 JSC_FINALIZER(DocumentElement::Finalizer)
 {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC::Class &DocumentElement::GetClassRef()

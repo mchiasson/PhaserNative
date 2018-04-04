@@ -107,6 +107,11 @@ Object Object::MakeError(const char *error, const char *stack)
     }
 }
 
+Object Object::MakeFunctionWithCallback(const std::string &name, JSObjectCallAsFunctionCallback callAsFunction)
+{
+    return JSObjectMakeFunctionWithCallback(JSC_GLOBAL_CTX, String(name), callAsFunction);
+}
+
 Object::Object(JSObjectRef obj) :
     m_obj(obj)
 {
@@ -172,11 +177,6 @@ Object Object::getGlobalObject()
 Object::operator JSObjectRef() const
 {
     return m_obj;
-}
-
-Object::operator Value() const
-{
-    return Value(m_obj);
 }
 
 bool Object::isFunction() const

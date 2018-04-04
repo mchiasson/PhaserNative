@@ -2,12 +2,12 @@
 
 JSC_INITIALIZER(Body::Initializer)
 {
-    _CreateInstance(object);
+    CreateInstance(object);
 }
 
 JSC_FINALIZER(Body::Finalizer)
 {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(Body::appendChild) {

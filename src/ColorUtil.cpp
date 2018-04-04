@@ -1,6 +1,7 @@
 #include "ColorUtil.h"
 #include <map>
 #include <sstream>
+#include <cstdio>
 
 #include <SDL2/SDL_log.h>
 
@@ -163,12 +164,10 @@ NVGcolor ColorUtil::stringToColor(const std::string &color)
 
     NVGcolor result = RGB(0,0,0); // default is black.
 
-    auto it = colorMap.find(color);
-    if (it != colorMap.end())
-    {
-        result = it->second;
-    }
-    else if(color[0] == '#' && color.length() >= 7)
+    const std::string rgb = "rgb";
+    const std::string rgba = "rgba";
+
+    if(color[0] == '#' && color.length() >= 7)
     {
         std::string r = "0x";
         std::string g = "0x";
@@ -205,6 +204,38 @@ NVGcolor ColorUtil::stringToColor(const std::string &color)
         result.g /= 255.0f;
         result.b /= 255.0f;
         result.a /= 255.0f;
+    }
+    else if (color.compare(0, rgb.size(), rgb) == 0 ||
+             color.compare(0, rgba.size(), rgba) == 0 )
+    {
+        std::string values;
+        values = color.substr((color[3] == '(' ? 4 : 5));
+        values = values.substr(0, values.length()-1);
+
+        std::istringstream ss(values);
+        std::string token;
+
+        size_t index = 0;
+        size_t found;
+        while(std::getline(ss, token, ',')) {
+            found=token.find('.');
+            if (found!=std::string::npos)
+            {
+                result.rgba[index++] = stof(token);
+            }
+            else
+            {
+                result.rgba[index++] = (stoi(token) / 255.0f);
+            }
+        }
+    }
+    else
+    {
+        auto it = colorMap.find(color);
+        if (it != colorMap.end())
+        {
+            result = it->second;
+        }
     }
 
     return result;

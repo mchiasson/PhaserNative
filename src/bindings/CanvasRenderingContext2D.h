@@ -18,6 +18,9 @@ private:
     static JSC_FUNCTION(getImageData);
     static JSC_FUNCTION(putImageData);
 
-    JSC_RW_PROPERTY(fillStyle);
+    static JSC_PROPERTY_GET(getFillStyle);
+    static JSC_PROPERTY_SET(setFillStyle);
+
+    JSC::Value m_fillStyle;
 
 };

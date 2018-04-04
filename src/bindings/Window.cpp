@@ -9,10 +9,10 @@
 
 JSC_INITIALIZER(Window::Initializer)
 {
-    Window &instance = _CreateInstance(object);
+    Window &instance = CreateInstance(object);
 
-    instance.object.setProperty("WebGLRenderingContext", WebGLRenderingContext::Create());
-    instance.object.setProperty("performance", Performance::Create());
+    instance.object.setProperty("WebGLRenderingContext", WebGLRenderingContext::CreateObject());
+    instance.object.setProperty("performance", Performance::CreateObject());
 
     // install a few global function into the instance.
     // Not sure why it has to exist in both cases...
@@ -29,7 +29,7 @@ JSC_INITIALIZER(Window::Initializer)
 
 JSC_FINALIZER(Window::Finalizer)
 {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(Window::createTimer) {
@@ -113,6 +113,23 @@ JSC_FUNCTION(Window::removeEventListener)
     return JSC::Value::MakeUndefined();
 }
 
+JSC_FUNCTION(Window::requestAnimationFrame)
+{
+    SDL_Event event;
+    memset(&event, 0, sizeof(SDL_Event));
+    event.type = PhaserNativeEvent::RequestAnimationFrame;
+    event.user.data1 = (void*)argv[0];
+    SDL_PushEvent(&event);
+    return JSC::Value(SDL_GetTicks());
+}
+
+void Window::OnRequestAnimationFrame(void* ptr, double timestamp)
+{
+    JSC::Object callbcack = JSC::Object((JSObjectRef)ptr);
+    callbcack.callAsFunction({JSC::Value(timestamp)});
+}
+
+
 JSC::Class &Window::GetClassRef()
 {
     if (!_class)
@@ -128,6 +145,7 @@ JSC::Class &Window::GetClassRef()
         static JSStaticFunction staticFunctions[] = {
             { "addEventListener", Window::addEventListener, kJSPropertyAttributeDontDelete },
             { "removeEventListener", Window::removeEventListener, kJSPropertyAttributeDontDelete },
+            { "requestAnimationFrame", Window::requestAnimationFrame, kJSPropertyAttributeDontDelete },
             { 0, 0, 0 }
         };
 
@@ -140,17 +158,12 @@ JSC::Class &Window::GetClassRef()
         classDefinition.finalize = Window::Finalizer;
         _class = JSC::Class(&classDefinition);
 
-        JSC::GlobalContext &ctx = JSC::GlobalContext::GetInstance();
-
-        JSC::String createTimerFunctionName = "__createTimer";
-        JSC::String deleteTimerFunctionName = "__deleteTimer";
-
-        JSC::Object createTimerFunctionObject = JSObjectMakeFunctionWithCallback(ctx, createTimerFunctionName, createTimer);
-        JSC::Object deleteTimerFunctionObject = JSObjectMakeFunctionWithCallback(ctx, deleteTimerFunctionName, deleteTimer);
+        JSC::Object createTimerFunctionObject = JSC::Object::MakeFunctionWithCallback("__createTimer", createTimer);
+        JSC::Object deleteTimerFunctionObject = JSC::Object::MakeFunctionWithCallback("__deleteTimer", deleteTimer);
 
         JSC::Object globalObject = JSC_GLOBAL_OBJECT;
-        globalObject.setProperty(createTimerFunctionName, createTimerFunctionObject, kJSPropertyAttributeDontEnum);
-        globalObject.setProperty(deleteTimerFunctionName, deleteTimerFunctionObject, kJSPropertyAttributeDontEnum);
+        globalObject.setProperty("__createTimer", createTimerFunctionObject, kJSPropertyAttributeDontEnum);
+        globalObject.setProperty("__deleteTimer", deleteTimerFunctionObject, kJSPropertyAttributeDontEnum);
 
         JSC::evaluateScriptFromString(
                     "function setTimeout(func, delay) {\n"

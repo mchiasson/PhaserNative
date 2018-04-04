@@ -7,23 +7,23 @@
 
 JSC_INITIALIZER(Document::Initializer)
 {
-    Document &instance = _CreateInstance(object);
+    Document &instance = CreateInstance(object);
 
-    instance.object.setProperty("body", Body::Create());
-    instance.object.setProperty("documentElement", DocumentElement::Create());
+    instance.object.setProperty("body", Body::CreateObject());
+    instance.object.setProperty("documentElement", DocumentElement::CreateObject());
     instance.object.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
 }
 
 JSC_FINALIZER(Document::Finalizer)
 {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(Document::createElement) {
     JSC::String elementName = JSC::Value(argv[0]).toString();
     if (elementName == "canvas")
     {
-        return Canvas::Create();
+        return Canvas::CreateObject();
     }
     else
     {

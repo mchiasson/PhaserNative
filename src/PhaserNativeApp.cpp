@@ -10,11 +10,13 @@
 #include "bindings/Image.h"
 #include "bindings/Navigator.h"
 #include "bindings/Window.h"
-
+#include "bindings/XMLHttpRequest.h"
 
 PhaserNativeApp::PhaserNativeApp()
 {
     PhaserNativeEvent::Timeout = SDL_RegisterEvents(1);
+    PhaserNativeEvent::ImageDecoded = SDL_RegisterEvents(1);
+    PhaserNativeEvent::RequestAnimationFrame = SDL_RegisterEvents(1);
 }
 
 PhaserNativeApp::~PhaserNativeApp()
@@ -46,11 +48,12 @@ int PhaserNativeApp::run(int argc, char* argv[])
 
     JSC::Object globalObject = JSC::Object::getGlobalObject();
 
-    globalObject.setProperty("console", Console::Create());
-    globalObject.setProperty("window", Window::Create());
-    globalObject.setProperty("navigator", Navigator::Create());
-    globalObject.setProperty("document", Document::Create());
-    globalObject.setProperty("Image", Image::Create());
+    globalObject.setProperty("console", Console::CreateObject());
+    globalObject.setProperty("window", Window::CreateObject());
+    globalObject.setProperty("navigator", Navigator::CreateObject());
+    globalObject.setProperty("document", Document::CreateObject());
+    globalObject.setProperty("Image", Image::CreateObject());
+    globalObject.setProperty("XMLHttpRequest", XMLHttpRequest::CreateObject());
 
     // evaluate phaser.js
     JSC::evaluateScriptFromFile("phaser.js");
@@ -75,22 +78,21 @@ int PhaserNativeApp::run(int argc, char* argv[])
     }
 #endif
 
-
     return rc;
 }
 
 void PhaserNativeApp::renderFrame()
 {
     processEvent();
-
-    m_window.render();
+//    m_window.renderStats();
+    m_window.swap();
 }
 
 void PhaserNativeApp::processEvent()
 {
     SDL_Event e;
 
-    while( SDL_PollEvent( &e ) != 0 )
+    if( SDL_WaitEvent( &e ) != 0 )
     {
         switch(e.type)
         {
@@ -179,7 +181,7 @@ void PhaserNativeApp::processEvent()
                 //int timer_id = static_cast<int>(reinterpret_cast<intptr_t>(e.user.data2));
 
                 JSObjectRef callbackObject = reinterpret_cast<JSObjectRef>(e.user.data1);
-                if (JSObjectIsFunction(JSC::GlobalContext::GetInstance(), callbackObject))
+                if (JSObjectIsFunction(JSC_GLOBAL_CTX, callbackObject))
                 {
                     JSObjectCallAsFunction(JSC_GLOBAL_CTX, callbackObject, JSC_GLOBAL_OBJECT, 0, nullptr, nullptr);
                 }
@@ -198,6 +200,14 @@ void PhaserNativeApp::processEvent()
                     }
                 }
             }
+            else if (e.type == PhaserNativeEvent::ImageDecoded) {
+
+                Image::OnImageDecoded(e.user.data1);
+            }
+            else if (e.type == PhaserNativeEvent::RequestAnimationFrame) {
+                Window::OnRequestAnimationFrame(e.user.data1, ((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency()));
+            }
+
             break;
         }
     }

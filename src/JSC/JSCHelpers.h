@@ -2,7 +2,7 @@
 
 #include "JSCContext.h"
 #include "JSCClass.h"
-
+#include "JSCException.h"
 
 #include <vector>
 
@@ -21,37 +21,15 @@
 #define JSC_FUNCTION(_FUNC_NAME_) \
     JSValueRef _FUNC_NAME_(JSContextRef ctx, JSObjectRef function, JSObjectRef object, size_t argc, const JSValueRef argv[], JSValueRef* exception)
 
+#define JSC_PROPERTY_GET(_GETTER_NAME_) \
+    JSValueRef _GETTER_NAME_(JSContextRef ctx, JSObjectRef object, JSStringRef propertyName, JSValueRef* exception)
+
+#define JSC_PROPERTY_SET(_SETTER_NAME_) \
+    bool _SETTER_NAME_(JSContextRef ctx, JSObjectRef object, JSStringRef propertyName, JSValueRef value, JSValueRef* exception)
+
+
 #define JSC_CONSTANT(_CONST_NAME_) \
     [](JSContextRef, JSObjectRef, JSStringRef, JSValueRef*) -> JSValueRef { return JSC::Value(_CONST_NAME_); }, nullptr, kJSPropertyAttributeReadOnly
-
-#define JSC_RW_PROPERTY(_NAME_)\
-    static JSValueRef get_##_NAME_(JSContextRef ctx, JSObjectRef object, JSStringRef /*propertyName*/, JSValueRef* exception) {\
-        size_t index = (size_t)JSObjectGetPrivate(object);\
-        if (index == 0) {\
-            *exception = JSC::Object::MakeError("Requires to be allocated with 'new' before use.", nullptr);\
-            return JSC::Value::MakeUndefined();\
-        } else {\
-            return _GetInstance(index)._NAME_;\
-        }\
-    }\
-    static bool set_##_NAME_(JSContextRef ctx, JSObjectRef object, JSStringRef /*propertyName*/, JSValueRef value, JSValueRef* exception) {\
-        size_t index = (size_t)JSObjectGetPrivate(object);\
-        if (index == 0) {\
-            *exception = JSC::Object::MakeError("Requires to be allocated with 'new' before use.", nullptr);\
-            return false;\
-        } else {\
-            _GetInstance(index)._NAME_ = value;\
-            return true;\
-        }\
-    }\
-    JSC::Value _NAME_
-
-#define JSC_R_PROPERTY(_NAME_)\
-    static JSValueRef get_##_NAME_(JSContextRef /*ctx*/, JSObjectRef object, JSStringRef /*propertyName*/, JSValueRef* /*exception*/) {\
-        size_t index = (size_t)JSObjectGetPrivate(object);\
-        return GetInstance(index)._NAME_;\
-    }\
-    JSC::Value _NAME_
 
 namespace JSC
 {
@@ -60,7 +38,7 @@ template<class C>
 class Binding {
 public:
 
-    static JSC::Object Create()
+    static JSC::Object CreateObject()
     {
         // this is how we force subclasses to write their GetClassRef
         // implementation. If you get an error on this line, you forgot to
@@ -76,9 +54,7 @@ public:
         return object;
     }
 
-protected:
-
-    static size_t _GetNextIndex()
+    static size_t GetNextIndex()
     {
         size_t index = 1; // 0 is reserved.
         bool found = false;
@@ -95,35 +71,41 @@ protected:
         return index;
     }
 
-    static C &_CreateInstance(JSC::Object object) {
-        size_t index = _GetNextIndex();
+    static C &CreateInstance(JSC::Object object) {
+        size_t index = GetNextIndex();
         C &instance = _pool[index];
         instance.object = std::move(object);
         instance.object.setPrivate(index);
         return instance;
     }
 
-    static void _FreeInstance(JSC::Object object) {
+    static void FreeInstance(JSC::Object object) {
         size_t index = object.getPrivate<size_t>();
         _pool[index]._inUse = false;
     }
 
-    static C &_GetInstance(size_t index) {
+    static C &GetInstance(size_t index) {
         return _pool[index];
     }
 
-    static C &_GetInstance(JSC::Object object) {
+    static C &GetInstance(JSC::Object object) {
         return _pool[object.getPrivate<size_t>()];
     }
 
-    static size_t _GetInstanceCount() {}
+    static size_t GetInstanceCount() {
+        size_t count = 0;
+        for (size_t index = 1; index < _pool.size(); ++index) {
+            if (_pool[index]._inUse) { ++count; }
+        }
+        return count;
+    }
 
-    static std::vector<JSStaticFunction> staticFunctions;
-    static std::vector<JSStaticValue> staticValues;
+    JSC::Object object;
+
+protected:
 
     static Class _class;
 
-    JSC::Object object;
 
 private:
     bool _inUse = false;

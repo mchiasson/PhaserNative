@@ -6,12 +6,12 @@
 #include <PhaserGL.h>
 
 JSC_INITIALIZER(CanvasRenderingContext2D::Initializer) {
-    _CreateInstance(object);
+    CreateInstance(object);
 }
 
 JSC_FINALIZER(CanvasRenderingContext2D::Finalizer) {
 
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
@@ -21,11 +21,11 @@ JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
     JSC::Value w = argv[2];
     JSC::Value h = argv[3];
 
-    CanvasRenderingContext2D &instance = _GetInstance(object);
+    CanvasRenderingContext2D &instance = GetInstance(object);
 
     nvgBeginPath(PhaserNativeWindow::vg);
     nvgRect(PhaserNativeWindow::vg, x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat());
-    nvgFillColor(PhaserNativeWindow::vg, ColorUtil::stringToColor(instance.fillStyle.toString().getUTF8String()));
+    nvgFillColor(PhaserNativeWindow::vg, ColorUtil::stringToColor(instance.m_fillStyle.toString().getUTF8String()));
     nvgFill(PhaserNativeWindow::vg);
 
     return JSC::Value::MakeUndefined();
@@ -60,10 +60,10 @@ JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
     glReadBuffer(GL_BACK);
     glReadPixels(sx.toInteger(), sy.toInteger(), sw.toInteger(), sh.toInteger(), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
-    JSC::Object data = JSC::Object::MakeTypedArrayWithBytesNoCopy(kJSTypedArrayTypeUint8Array, pixels, length, [](void* ptr, void*){free(ptr);}, nullptr);
+    JSC::Object typedArray = JSC::Object::MakeTypedArrayWithBytesNoCopy(kJSTypedArrayTypeUint8Array, pixels, length, [](void* ptr, void*){free(ptr);}, nullptr);
 
     JSC::Object imageData = JSC::Object::MakeDefault();
-    imageData.setProperty("data", data, kJSPropertyAttributeReadOnly);
+    imageData.setProperty("data", typedArray, kJSPropertyAttributeReadOnly);
     imageData.setProperty("width", sw, kJSPropertyAttributeReadOnly);
     imageData.setProperty("height", sh, kJSPropertyAttributeReadOnly);
 
@@ -96,6 +96,17 @@ JSC_FUNCTION(CanvasRenderingContext2D::putImageData)
     return JSC::Value::MakeUndefined();
 }
 
+JSC_PROPERTY_GET(CanvasRenderingContext2D::getFillStyle)
+{
+    return GetInstance(object).m_fillStyle;
+}
+
+JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle)
+{
+    GetInstance(object).m_fillStyle = value;
+    return true;
+}
+
 JSC::Class &CanvasRenderingContext2D::GetClassRef()
 {
     if (!_class)
@@ -109,7 +120,7 @@ JSC::Class &CanvasRenderingContext2D::GetClassRef()
         };
 
         static JSStaticValue staticValues[] = {
-            { "fillStyle", CanvasRenderingContext2D::get_fillStyle, CanvasRenderingContext2D::set_fillStyle, kJSPropertyAttributeDontDelete },
+            { "fillStyle", CanvasRenderingContext2D::getFillStyle, CanvasRenderingContext2D::setFillStyle, kJSPropertyAttributeDontDelete },
             { 0, 0, 0, 0 }
         };
 

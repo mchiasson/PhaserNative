@@ -146,9 +146,6 @@ double Value::toDouble() const
         throw Exception("Failed to convert to number");
     }
     return value;
-
-
-    return JSValueToNumber(JSC_GLOBAL_CTX, m_value, nullptr);
 }
 
 int32_t Value::toInteger() const

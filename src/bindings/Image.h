@@ -4,18 +4,23 @@
 
 class Image : public JSC::Binding<Image>
 {
+    friend class WebGLRenderingContext;
+
 public:
 
     static JSC::Class &GetClassRef();
+
+    static void OnImageDecoded(void* imageData);
 
 private:
 
     static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 
-    JSC_RW_PROPERTY(src);
-    JSC_RW_PROPERTY(width);
-    JSC_RW_PROPERTY(height);
+    static JSC_PROPERTY_GET(getSrc);
+    static JSC_PROPERTY_SET(setSrc);
+    JSC::Value m_src;
 
+    uint8_t *m_pixels = nullptr;
 };
 

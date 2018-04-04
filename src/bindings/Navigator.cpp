@@ -21,13 +21,13 @@
 
 JSC_INITIALIZER(Navigator::Initializer)
 {
-    Navigator &navigator = _CreateInstance(object);
+    Navigator &navigator = CreateInstance(object);
     navigator.object.setProperty("userAgent", JSC::Value(OS_NAME));
 }
 
 JSC_FINALIZER(Navigator::Finalizer)
 {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC::Class &Navigator::GetClassRef()

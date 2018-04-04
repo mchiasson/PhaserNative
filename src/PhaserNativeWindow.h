@@ -15,7 +15,8 @@ public:
     PhaserNativeWindow();
     ~PhaserNativeWindow();
 
-    void render();
+    void renderStats();
+    void swap();
 
     static SDL_Window *window;
     static SDL_GLContext context;

@@ -3,17 +3,17 @@
 
 JSC_INITIALIZER(Performance::Initializer)
 {
-    _CreateInstance(object);
+    CreateInstance(object);
 }
 
 JSC_FINALIZER(Performance::Finalizer)
 {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(Performance::now)
 {
-    return JSC::Value(SDL_GetTicks());
+    return JSC::Value(((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency()));
 }
 
 JSC::Class &Performance::GetClassRef()

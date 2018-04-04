@@ -14,6 +14,8 @@ struct PhaserNativeEvent
 {
     static std::vector<SDL_Event*> Timers;
     static uint32_t Timeout;
+    static uint32_t ImageDecoded;
+    static uint32_t RequestAnimationFrame;
 
     static std::unordered_map<std::string, std::set<JSC::Object> > eventListeners;
 };

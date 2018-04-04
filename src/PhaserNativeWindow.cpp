@@ -197,22 +197,17 @@ PhaserNativeWindow::~PhaserNativeWindow()
     SDL_DestroyWindow(window);
 }
 
-void PhaserNativeWindow::render()
+void PhaserNativeWindow::renderStats()
 {
     m_prevTime = m_currentTime;
     m_currentTime = SDL_GetPerformanceCounter();
     m_deltaTime = m_currentTime - m_prevTime;
 
 
-    float gpuTimes[3];
-
-    SDL_GL_MakeCurrent(window, context);
-
     int fbWidth, fbHeight;
     SDL_GL_GetDrawableSize(window, &fbWidth, &fbHeight);
 
     startGPUTimer(&gpuTimer);
-
 
     glViewport(0, 0, fbWidth, fbHeight);
     glClearColor(m_backgroundColor[0], m_backgroundColor[1], m_backgroundColor[2], m_backgroundColor[3]);
@@ -251,6 +246,7 @@ void PhaserNativeWindow::render()
     cpuGraph.updateGraph(cpuTime / (float)SDL_GetPerformanceFrequency());
 
     // We may get multiple results.
+    float gpuTimes[3];
     int n = stopGPUTimer(&gpuTimer, gpuTimes, 3);
     for (int i = 0; i < n; i++) {
         gpuGraph.updateGraph(gpuTimes[i]);
@@ -287,5 +283,9 @@ void PhaserNativeWindow::render()
         gpuMemGraph.updateGraph(gpuMemGraph.getMaximumValue()-(available/1024.0f));
     }
 
+}
+
+void PhaserNativeWindow::swap()
+{
     SDL_GL_SwapWindow(window);
 }

@@ -8,6 +8,8 @@ public:
 
     static JSC::Class &GetClassRef();
 
+    static void OnRequestAnimationFrame(void* ptr, double timestamp);
+
 private:
 
     static JSC_INITIALIZER(Initializer);
@@ -19,5 +21,6 @@ private:
     static JSC_FUNCTION(addEventListener);
     static JSC_FUNCTION(removeEventListener);
 
+    static JSC_FUNCTION(requestAnimationFrame);
 
 };

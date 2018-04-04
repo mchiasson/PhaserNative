@@ -120,7 +120,7 @@ public:
 
 private:
 
-    JSValueRef m_value;
+    JSValueRef m_value = nullptr;
 };
 
 }

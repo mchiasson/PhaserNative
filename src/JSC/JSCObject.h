@@ -25,6 +25,7 @@ public:
     static Object MakeArrayBufferWithBytesNoCopy(void* bytes, size_t byteLength, JSTypedArrayBytesDeallocator bytesDeallocator, void* deallocatorContext);
     static Object MakeDate(TimeType time);
     static Object MakeError(const char *error, const char *stack = nullptr);
+    static Object MakeFunctionWithCallback(const std::string &name, JSObjectCallAsFunctionCallback callAsFunction);
 
     static Object getGlobalObject();
 
@@ -40,7 +41,6 @@ public:
     bool operator!=(const Object &other);
 
     operator JSObjectRef() const;
-    operator Value() const;
 
     bool isFunction() const;
     Value callAsFunction(std::initializer_list<JSValueRef> args) const;

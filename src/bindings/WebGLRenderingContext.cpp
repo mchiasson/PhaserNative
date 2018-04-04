@@ -1,16 +1,17 @@
 #include "WebGLRenderingContext.h"
 #include "PhaserGL.h"
+#include "Image.h"
 
 #include <cstring>
 
 #include <SDL2/SDL_log.h>
 
 JSC_INITIALIZER(WebGLRenderingContext::Initializer) {
-    _CreateInstance(object);
+    WebGLRenderingContext &context = CreateInstance(object);
 }
 
 JSC_FINALIZER(WebGLRenderingContext::Finalizer) {
-    _FreeInstance(object);
+    FreeInstance(object);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::attachShader) {
@@ -26,7 +27,32 @@ JSC_FUNCTION(WebGLRenderingContext::attachShader) {
 JSC_FUNCTION(WebGLRenderingContext::bindBuffer) {
     JSC::Value target = argv[0];
     JSC::Value buffer = argv[1];
+
+#ifndef NDEBUG
+    if (target.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported target! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
+
     glBindBuffer(target, buffer);
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::bindTexture) {
+    JSC::Value target = argv[0];
+    JSC::Value texture = argv[1];
+
+#ifndef NDEBUG
+    if (target.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported target! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
+
+    glBindTexture(target, texture);
     return JSC::Value::MakeUndefined();
 }
 
@@ -110,6 +136,13 @@ JSC_FUNCTION(WebGLRenderingContext::bufferData) {
     return JSC::Value::MakeUndefined();
 }
 
+JSC_FUNCTION(WebGLRenderingContext::clear)
+{
+    JSC::Value mask = argv[0];
+    glClear(mask);
+    return JSC::Value::MakeUndefined();
+}
+
 JSC_FUNCTION(WebGLRenderingContext::clearColor) {
     JSC::Value r = argv[0];
     JSC::Value g = argv[0];
@@ -153,6 +186,12 @@ JSC_FUNCTION(WebGLRenderingContext::createShader)
     return JSC::Value(glCreateShader(type));
 }
 
+JSC_FUNCTION(WebGLRenderingContext::createTexture) {
+    GLuint texture;
+    glCreateTextures(GL_TEXTURE_2D, 1, &texture);
+    return JSC::Value(texture);
+}
+
 JSC_FUNCTION(WebGLRenderingContext::disable) {
     JSC::Value cap = argv[0];
 
@@ -188,6 +227,14 @@ JSC_FUNCTION(WebGLRenderingContext::getProgramParameter) {
     JSC::Value shader = argv[0];
     JSC::Value pname = argv[1];
 
+#ifndef NDEBUG
+    if (pname.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported pname! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
+
     GLint params;
     glGetProgramiv(shader, pname, &params);
 
@@ -197,6 +244,14 @@ JSC_FUNCTION(WebGLRenderingContext::getProgramParameter) {
 JSC_FUNCTION(WebGLRenderingContext::getShaderParameter) {
     JSC::Value shader = argv[0];
     JSC::Value pname = argv[1];
+
+#ifndef NDEBUG
+    if (pname.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported pname! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
 
     GLint params;
     glGetShaderiv(shader, pname, &params);
@@ -250,6 +305,113 @@ JSC_FUNCTION(WebGLRenderingContext::shaderSource)
     return JSC::Value::MakeUndefined();
 }
 
+JSC_FUNCTION(WebGLRenderingContext::pixelStorei) {
+    JSC::Value pname = argv[0];
+    JSC::Value param = argv[1];
+
+#ifndef NDEBUG
+    if (pname.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported pname! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+
+    if (param.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported param! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
+
+    glPixelStorei(pname, param);
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::texImage2D) {
+    JSC::Value target = argv[0];
+    JSC::Value level = argv[1];
+    JSC::Value internalformat = argv[2];
+    JSC::Value format = argv[3];
+    JSC::Value type = argv[4];
+    JSC::Value imageVal = argv[5];
+
+#ifndef NDEBUG
+    if (target.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported target! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+
+    if (internalformat.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported internalformat! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+
+    if (format.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported format! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+
+    if (type.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported type! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+
+#endif
+
+    Image &image = Image::GetInstance(imageVal.toObject());
+
+try {
+    glTexImage2D(target,
+                 level,
+                 internalformat,
+                 image.object.getProperty("width"),
+                 image.object.getProperty("height"),
+                 0,
+                 format,
+                 type,
+                 image.m_pixels);
+
+    } catch (JSC::Exception &e)
+    {
+        *exception = JSC::Object::MakeError(e.what(), e.getStack().c_str());
+    }
+
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::texParameteri) {
+    JSC::Value target = argv[0];
+    JSC::Value pname = argv[1];
+    JSC::Value param = argv[2];
+
+#ifndef NDEBUG
+    if (target.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported target! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+
+    if (pname.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported pname! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+
+    if (param.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported param! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
+
+    glTexParameteri(target, pname, param);
+    return JSC::Value::MakeUndefined();
+}
+
 JSC_FUNCTION(WebGLRenderingContext::viewport) {
     JSC::Value x      = argv[0];
     JSC::Value y      = argv[1];
@@ -269,21 +431,27 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
         static JSStaticFunction staticFunctions[] = {
             JSC_GL_FUNC(attachShader),
             JSC_GL_FUNC(bindBuffer),
+            JSC_GL_FUNC(bindTexture),
             JSC_GL_FUNC(blendEquation),
             JSC_GL_FUNC(blendFunc),
             JSC_GL_FUNC(bufferData),
+            JSC_GL_FUNC(clear),
             JSC_GL_FUNC(clearColor),
             JSC_GL_FUNC(compileShader),
             JSC_GL_FUNC(createBuffer),
             JSC_GL_FUNC(createProgram),
             JSC_GL_FUNC(createShader),
+            JSC_GL_FUNC(createTexture),
             JSC_GL_FUNC(disable),
             JSC_GL_FUNC(enable),
             JSC_GL_FUNC(getProgramParameter),
             JSC_GL_FUNC(getShaderParameter),
             JSC_GL_FUNC(getSupportedExtensions),
             JSC_GL_FUNC(linkProgram),
+            JSC_GL_FUNC(pixelStorei),
             JSC_GL_FUNC(shaderSource),
+            JSC_GL_FUNC(texImage2D),
+            JSC_GL_FUNC(texParameteri),
             JSC_GL_FUNC(viewport),
             { 0, 0, 0 }
         };
@@ -291,12 +459,16 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
 #define JSC_GL_CONSTANT(_CONSTANT_NAME_) { #_CONSTANT_NAME_, JSC_CONSTANT(GL_##_CONSTANT_NAME_) }
 
         static JSStaticValue staticValues[] = {
+            JSC_GL_CONSTANT(ALPHA),
             JSC_GL_CONSTANT(ARRAY_BUFFER),
             JSC_GL_CONSTANT(BLEND),
+            JSC_GL_CONSTANT(CLAMP_TO_EDGE),
+            JSC_GL_CONSTANT(COLOR_BUFFER_BIT),
             JSC_GL_CONSTANT(COMPILE_STATUS),
             JSC_GL_CONSTANT(CONSTANT_ALPHA),
             JSC_GL_CONSTANT(CONSTANT_COLOR),
             JSC_GL_CONSTANT(CULL_FACE),
+            JSC_GL_CONSTANT(DEPTH_BUFFER_BIT),
             JSC_GL_CONSTANT(DEPTH_TEST),
             JSC_GL_CONSTANT(DST_ALPHA),
             JSC_GL_CONSTANT(DST_COLOR),
@@ -306,7 +478,16 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(FUNC_ADD),
             JSC_GL_CONSTANT(FUNC_REVERSE_SUBTRACT),
             JSC_GL_CONSTANT(FUNC_SUBTRACT),
+            JSC_GL_CONSTANT(LINEAR),
+            JSC_GL_CONSTANT(LINEAR_MIPMAP_LINEAR),
+            JSC_GL_CONSTANT(LINEAR_MIPMAP_NEAREST),
             JSC_GL_CONSTANT(LINK_STATUS),
+            JSC_GL_CONSTANT(LUMINANCE),
+            JSC_GL_CONSTANT(LUMINANCE_ALPHA),
+            JSC_GL_CONSTANT(MIRRORED_REPEAT),
+            JSC_GL_CONSTANT(NEAREST),
+            JSC_GL_CONSTANT(NEAREST_MIPMAP_LINEAR),
+            JSC_GL_CONSTANT(NEAREST_MIPMAP_NEAREST),
             JSC_GL_CONSTANT(ONE),
             JSC_GL_CONSTANT(ONE_MINUS_CONSTANT_ALPHA),
             JSC_GL_CONSTANT(ONE_MINUS_CONSTANT_COLOR),
@@ -314,12 +495,30 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(ONE_MINUS_DST_COLOR),
             JSC_GL_CONSTANT(ONE_MINUS_SRC_ALPHA),
             JSC_GL_CONSTANT(ONE_MINUS_SRC_COLOR),
+            JSC_GL_CONSTANT(PACK_ALIGNMENT),
+            JSC_GL_CONSTANT(REPEAT),
+            JSC_GL_CONSTANT(RGB),
+            JSC_GL_CONSTANT(RGBA),
             JSC_GL_CONSTANT(SCISSOR_TEST),
             JSC_GL_CONSTANT(SRC_ALPHA),
             JSC_GL_CONSTANT(SRC_ALPHA_SATURATE),
             JSC_GL_CONSTANT(SRC_COLOR),
             JSC_GL_CONSTANT(STATIC_DRAW),
+            JSC_GL_CONSTANT(STENCIL_BUFFER_BIT),
             JSC_GL_CONSTANT(STREAM_DRAW),
+            JSC_GL_CONSTANT(TEXTURE_2D),
+            JSC_GL_CONSTANT(TEXTURE_MAG_FILTER),
+            JSC_GL_CONSTANT(TEXTURE_MIN_FILTER),
+            JSC_GL_CONSTANT(TEXTURE_WRAP_S),
+            JSC_GL_CONSTANT(TEXTURE_WRAP_T),
+            JSC_GL_CONSTANT(UNPACK_ALIGNMENT),
+            JSC_GL_CONSTANT(UNPACK_COLORSPACE_CONVERSION_WEBGL),
+            JSC_GL_CONSTANT(UNPACK_FLIP_Y_WEBGL),
+            JSC_GL_CONSTANT(UNPACK_PREMULTIPLY_ALPHA_WEBGL),
+            JSC_GL_CONSTANT(UNSIGNED_BYTE),
+            JSC_GL_CONSTANT(UNSIGNED_SHORT_4_4_4_4),
+            JSC_GL_CONSTANT(UNSIGNED_SHORT_5_5_5_1),
+            JSC_GL_CONSTANT(UNSIGNED_SHORT_5_6_5),
             JSC_GL_CONSTANT(VERTEX_SHADER),
             JSC_GL_CONSTANT(ZERO),
             { 0, 0, 0, 0 }
