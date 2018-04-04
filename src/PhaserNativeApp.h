@@ -24,7 +24,6 @@ public:
 
 private:
 
-    void renderFrame();
     void processEvent();
 
     PhaserNativeWindow m_window;

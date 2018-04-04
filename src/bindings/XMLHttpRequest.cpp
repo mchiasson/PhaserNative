@@ -1,6 +1,9 @@
 #include "XMLHttpRequest.h"
 
+#include "PhaserNativeEvent.h"
+
 #include <sstream>
+#include <SDL2/SDL_log.h>
 
 JSC_CONSTRUCTOR(XMLHttpRequest::Constructor)
 {
@@ -23,30 +26,34 @@ JSC_FUNCTION(XMLHttpRequest::open)
 
     XMLHttpRequest &request = GetInstance(object);
 
+    RequestData requestData;
+
     if (method.isString())
     {
-        request.m_method = method.toString().getUTF8String();
+        requestData.m_method = method.toString().getUTF8String();
     }
 
     if (url.isString())
     {
-        request.m_url = url.toString().getUTF8String();
+        requestData.m_url = url.toString().getUTF8String();
     }
 
     if (async.isBoolean())
     {
-        request.m_async = async;
+        requestData.m_async = async;
     }
 
     if (user.isString())
     {
-        request.m_user = user.toString().getUTF8String();
+        requestData.m_user = user.toString().getUTF8String();
     }
 
     if (password.isString())
     {
-        request.m_password = password.toString().getUTF8String();
+        requestData.m_password = password.toString().getUTF8String();
     }
+
+    request.m_requestQueue.push_back(requestData);
 
     return JSC::Value::MakeUndefined();
 }
@@ -55,45 +62,83 @@ JSC_FUNCTION(XMLHttpRequest::send)
 {
     XMLHttpRequest &request = GetInstance(object);
 
-    JSC::Object onLoad;
+    RequestData &requestData = request.m_requestQueue.back();
+
+
+    JSC::Value onLoadVal = request.object.getProperty("onload");
+    JSC::Value onErrorVal = request.object.getProperty("onerror");
+    JSC::Value onProgressVal = request.object.getProperty("onprogress");
+
+    if (onLoadVal.isObject())
     {
-        JSC::Value onLoadVal = request.object.getProperty("onLoad");
-        if (onLoadVal.isObject()) {
-            onLoad = onLoadVal.toObject();
-        }
+        requestData.m_onLoad = onLoadVal.toObject();
     }
 
-    JSC::Object onError;
+    if (onErrorVal.isObject())
     {
-        JSC::Value onErrorVal = request.object.getProperty("onError");
-        if (onErrorVal.isObject()) {
-            onError = onErrorVal.toObject();
-        }
+        requestData.m_onError = onErrorVal.toObject();
     }
 
-    JSC::Object onProgress;
+    if (onProgressVal.isObject())
     {
-        JSC::Value onProgressVal = request.object.getProperty("onProgress");
-        if (onProgressVal.isObject()) {
-            onProgress = onProgressVal.toObject();
-        }
+        requestData.m_onProgress = onProgressVal.toObject();
     }
 
+    SDL_Event event;
+    memset(&event, 0, sizeof(SDL_Event));
+    event.type = PhaserNativeEvent::XHR;
+    event.user.data1 = object;
+    SDL_PushEvent(&event);
+
+    return JSC::Value::MakeUndefined();
+}
+
+JSC::Class &XMLHttpRequest::GetClassRef()
+{
+    if (!_class)
+    {
+        static JSStaticFunction staticFunctions[] = {
+            { "open", XMLHttpRequest::open, kJSPropertyAttributeDontDelete },
+            { "send", XMLHttpRequest::send, kJSPropertyAttributeDontDelete },
+            { 0, 0, 0 }
+        };
 
 
+        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
+        classDefinition.className = "XMLHttpRequest";
+        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
+        classDefinition.staticFunctions = staticFunctions;
+        classDefinition.callAsConstructor = XMLHttpRequest::Constructor;
+        classDefinition.finalize = XMLHttpRequest::Finalizer;
+        _class = JSC::Class(&classDefinition);
+    }
 
-    FILE *file = fopen(request.m_url.c_str(), "rb");
+    return _class;
+}
+
+void XMLHttpRequest::OnRequest(void* ptr)
+{
+    XMLHttpRequest &request = GetInstance((JSObjectRef)ptr);
+
+    const RequestData &requestData = request.m_requestQueue.front();
+
+    JSC::Object onLoad = requestData.m_onLoad;
+    JSC::Object onError = requestData.m_onError;
+    JSC::Object onProgress = requestData.m_onProgress;
+
+    FILE *file = fopen(requestData.m_url.c_str(), "rb");
 
     if (!file)
     {
+        SDL_LogError(0, "could not open %s\n", requestData.m_url.c_str());
         if (onError.isFunction())
         {
             onError.callAsFunction({});
         }
-        return JSC::Value::MakeUndefined();
+        return;
     }
 
-    
+
     fseek(file, 0, SEEK_END); // seek to end of file
     size_t total = ftell(file); // get current file pointer
     fseek(file, 0, SEEK_SET); // seek back to beginning of file
@@ -117,15 +162,6 @@ JSC_FUNCTION(XMLHttpRequest::send)
     {
         progressEvent.setProperty("loaded", loaded);
         onProgress.callAsFunction({progressEvent});
-    }
-
-    if (onLoad.isFunction())
-    {
-        JSC::Object loadEvent = JSC::Object::MakeDefault();
-        JSC::Object target = JSC::Object::MakeDefault();
-        target.setProperty("status", 200);
-        loadEvent.setProperty("target", target);
-        onLoad.callAsFunction({loadEvent});
     }
 
     JSC::Value responseType = request.object.getProperty("responseType");
@@ -157,11 +193,7 @@ JSC_FUNCTION(XMLHttpRequest::send)
         else
         {
             std::stringstream ss;
-            ss << "Unsupported xhr.responseType '"
-                << type
-                << "'. Please conntact a developer!";
-
-            *exception = JSC::Object::MakeError(ss.str().c_str());
+            SDL_LogError(0, "Unsupported xhr.responseType '%s'. Please conntact a developer!\n", type.c_str());
         }
     }
     else
@@ -172,29 +204,14 @@ JSC_FUNCTION(XMLHttpRequest::send)
         request.object.setProperty("response", JSC::Value(response));
     }
 
-
-    return JSC::Value::MakeUndefined();
-}
-
-JSC::Class &XMLHttpRequest::GetClassRef()
-{
-    if (!_class)
+    if (onLoad.isFunction())
     {
-        static JSStaticFunction staticFunctions[] = {
-            { "open", XMLHttpRequest::open, kJSPropertyAttributeDontDelete },
-            { "send", XMLHttpRequest::send, kJSPropertyAttributeDontDelete },
-            { 0, 0, 0 }
-        };
-
-
-        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
-        classDefinition.className = "XMLHttpRequest";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
-        classDefinition.staticFunctions = staticFunctions;
-        classDefinition.callAsConstructor = XMLHttpRequest::Constructor;
-        classDefinition.finalize = XMLHttpRequest::Finalizer;
-        _class = JSC::Class(&classDefinition);
+        JSC::Object loadEvent = JSC::Object::MakeDefault();
+        JSC::Object target = JSC::Object::MakeDefault();
+        target.setProperty("status", 200);
+        loadEvent.setProperty("target", target);
+        onLoad.callAsFunction({loadEvent});
     }
 
-    return _class;
+    request.m_requestQueue.pop_front();
 }

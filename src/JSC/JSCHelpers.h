@@ -72,11 +72,16 @@ public:
     }
 
     static C &CreateInstance(JSC::Object object) {
-        size_t index = GetNextIndex();
-        C &instance = _pool[index];
-        instance.object = std::move(object);
-        instance.object.setPrivate(index);
-        return instance;
+        size_t index = object.getPrivate<size_t>();
+        if (index == 0) {
+            index = GetNextIndex();
+            C &instance = _pool[index];
+            instance.object = std::move(object);
+            instance.object.setPrivate(index);
+            return instance;
+        } else {
+            return GetInstance(index);
+        }
     }
 
     static void FreeInstance(JSC::Object object) {

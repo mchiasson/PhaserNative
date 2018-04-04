@@ -16,6 +16,7 @@ struct PhaserNativeEvent
     static uint32_t Timeout;
     static uint32_t ImageDecoded;
     static uint32_t RequestAnimationFrame;
+    static uint32_t XHR;
 
     static std::unordered_map<std::string, std::set<JSC::Object> > eventListeners;
 };

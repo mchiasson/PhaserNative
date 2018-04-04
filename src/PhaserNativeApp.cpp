@@ -70,29 +70,22 @@ int PhaserNativeApp::run(int argc, char* argv[])
     m_running = true;
 
 #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(renderFrame, 0, 1);
+    emscripten_set_main_loop(processEvent, 0, 1);
 #else
     while(m_running)
     {
-        renderFrame();
+        processEvent();
     }
 #endif
 
     return rc;
 }
 
-void PhaserNativeApp::renderFrame()
-{
-    processEvent();
-//    m_window.renderStats();
-    m_window.swap();
-}
-
 void PhaserNativeApp::processEvent()
 {
     SDL_Event e;
 
-    if( SDL_WaitEvent( &e ) != 0 )
+    while(SDL_PollEvent( &e ) != 0)
     {
         switch(e.type)
         {
@@ -178,7 +171,6 @@ void PhaserNativeApp::processEvent()
             if (e.type == PhaserNativeEvent::Timeout) {
 
                 bool oneshot = e.user.code > 0;
-                //int timer_id = static_cast<int>(reinterpret_cast<intptr_t>(e.user.data2));
 
                 JSObjectRef callbackObject = reinterpret_cast<JSObjectRef>(e.user.data1);
                 if (JSObjectIsFunction(JSC_GLOBAL_CTX, callbackObject))
@@ -200,12 +192,19 @@ void PhaserNativeApp::processEvent()
                     }
                 }
             }
-            else if (e.type == PhaserNativeEvent::ImageDecoded) {
-
+            else if (e.type == PhaserNativeEvent::ImageDecoded)
+            {
                 Image::OnImageDecoded(e.user.data1);
             }
-            else if (e.type == PhaserNativeEvent::RequestAnimationFrame) {
+            else if (e.type == PhaserNativeEvent::RequestAnimationFrame)
+            {
                 Window::OnRequestAnimationFrame(e.user.data1, ((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency()));
+                m_window.renderStats();
+                m_window.swap();
+            }
+            else if (e.type == PhaserNativeEvent::XHR)
+            {
+                XMLHttpRequest::OnRequest(e.user.data1);
             }
 
             break;
