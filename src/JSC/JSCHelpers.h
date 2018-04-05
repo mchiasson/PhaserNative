@@ -6,11 +6,11 @@
 
 #include <vector>
 
-#define JSC_GLOBAL_CTX JSC::GlobalContext::GetInstance()
-#define JSC_GLOBAL_OBJECT JSC::Object::getGlobalObject()
+#define JSC_GLOBAL_CTX JSC::GlobalContext::GetNativeInstance()
+#define JSC_GLOBAL_OBJECT JSC::Object::GetGlobalObject()
 
 #define JSC_CONSTRUCTOR(_CONSTRUCTOR_NAME_) \
-    JSObjectRef _CONSTRUCTOR_NAME_(JSContextRef ctx, JSObjectRef object, size_t argc, const JSValueRef argv[], JSValueRef* exception)
+    JSObjectRef _CONSTRUCTOR_NAME_(JSContextRef ctx, JSObjectRef constructor, size_t argc, const JSValueRef argv[], JSValueRef* exception)
 
 #define JSC_INITIALIZER(_INITIALIZER_NAME_) \
     void _INITIALIZER_NAME_(JSContextRef ctx, JSObjectRef object)
@@ -38,12 +38,22 @@ template<class C>
 class Binding {
 public:
 
-    static JSC::Object CreateObject()
+    static JSC::Object CreateJSObject(std::initializer_list<JSValueRef> args)
     {
-        // this is how we force subclasses to write their GetClassRef
-        // implementation. If you get an error on this line, you forgot to
-        // implement 'static JSC::Class &GetClassRef()' in the subclass.
-        return JSC::Object::Make(C::GetClassRef());
+        return GetJSConstructor().callAsConstructor(args);
+    }
+
+    static JSC::Object GetJSConstructor()
+    {
+        if (!_constructor)
+        {
+            // this is how we force subclasses to write their GetClassRef
+            // implementation. If you get an error on this line, you forgot to
+            // implement 'static JSC::Class &GetClassRef()' in the subclass.
+            _constructor = JSC::Object::MakeConstructor(C::GetClassRef(), C::Constructor);
+            _constructor.protect();
+        }
+        return _constructor;
     }
 
     operator JSObjectRef() const {
@@ -71,33 +81,28 @@ public:
         return index;
     }
 
-    static C &CreateInstance(JSC::Object object) {
-        size_t index = object.getPrivate<size_t>();
-        if (index == 0) {
-            index = GetNextIndex();
-            C &instance = _pool[index];
-            instance.object = std::move(object);
-            instance.object.setPrivate(index);
-            return instance;
-        } else {
-            return GetInstance(index);
-        }
+    static C &CreateNativeInstance() {
+        size_t index = GetNextIndex();
+        C &nativeInstance = _pool[index];
+        nativeInstance.object = JSC::Object::Make(C::GetClassRef(), (void*)index);
+        return nativeInstance;
     }
 
-    static void FreeInstance(JSC::Object object) {
+    static void FreeNativeInstance(JSC::Object object) {
         size_t index = object.getPrivate<size_t>();
         _pool[index]._inUse = false;
+        _pool[index].object = nullptr;
     }
 
-    static C &GetInstance(size_t index) {
+    static C &GetNativeInstance(size_t index) {
         return _pool[index];
     }
 
-    static C &GetInstance(JSC::Object object) {
+    static C &GetNativeInstance(JSC::Object object) {
         return _pool[object.getPrivate<size_t>()];
     }
 
-    static size_t GetInstanceCount() {
+    static size_t GetNativeInstanceCount() {
         size_t count = 0;
         for (size_t index = 1; index < _pool.size(); ++index) {
             if (_pool[index]._inUse) { ++count; }
@@ -110,6 +115,7 @@ public:
 protected:
 
     static Class _class;
+    static Object _constructor;
 
 
 private:
@@ -119,6 +125,7 @@ private:
 };
 
 template<class C> Class Binding<C>::_class;
+template<class C> Object Binding<C>::_constructor;
 template<class C> std::vector<C> JSC::Binding<C>::_pool;
 
 

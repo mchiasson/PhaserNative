@@ -7,29 +7,32 @@
 #include "PhaserNativeEvent.h"
 #include "WebGLRenderingContext.h"
 
-JSC_INITIALIZER(Window::Initializer)
+JSC_CONSTRUCTOR(Window::Constructor)
 {
-    Window &instance = CreateInstance(object);
-
-    instance.object.setProperty("WebGLRenderingContext", WebGLRenderingContext::CreateObject());
-    instance.object.setProperty("performance", Performance::CreateObject());
+    Window &window = CreateNativeInstance();
 
     // install a few global function into the instance.
     // Not sure why it has to exist in both cases...
     JSC::Object globalObject = JSC_GLOBAL_OBJECT;
-    JSC::Object setTimeout = globalObject.getProperty("setTimeout").toObject();
-    JSC::Object clearTimeout = globalObject.getProperty("clearTimeout").toObject();
-    JSC::Object setInterval = globalObject.getProperty("setInterval").toObject();
-    JSC::Object clearInterval = globalObject.getProperty("clearInterval").toObject();
-    instance.object.setProperty("setTimeout", setTimeout);
-    instance.object.setProperty("clearTimeout", clearTimeout);
-    instance.object.setProperty("setInterval", setInterval);
-    instance.object.setProperty("clearInterval", clearInterval);
+    JSC::Value setTimeout = globalObject.getProperty("setTimeout");
+    JSC::Value clearTimeout = globalObject.getProperty("clearTimeout");
+    JSC::Value setInterval = globalObject.getProperty("setInterval");
+    JSC::Value clearInterval = globalObject.getProperty("clearInterval");
+    JSC::Value performance = globalObject.getProperty("performance");
+    JSC::Value WebGLRenderingContext = globalObject.getProperty("WebGLRenderingContext");
+    window.object.setProperty("setTimeout", setTimeout);
+    window.object.setProperty("clearTimeout", clearTimeout);
+    window.object.setProperty("setInterval", setInterval);
+    window.object.setProperty("clearInterval", clearInterval);
+    window.object.setProperty("performance", performance);
+    window.object.setProperty("WebGLRenderingContext", WebGLRenderingContext);
+
+    return window.object;
 }
 
 JSC_FINALIZER(Window::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(Window::createTimer) {
@@ -151,10 +154,9 @@ JSC::Class &Window::GetClassRef()
 
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "Window";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
         classDefinition.staticFunctions = staticFunctions;
         classDefinition.staticValues = staticValues;
-        classDefinition.initialize = Window::Initializer;
+        classDefinition.callAsConstructor = Window::Constructor;
         classDefinition.finalize = Window::Finalizer;
         _class = JSC::Class(&classDefinition);
 

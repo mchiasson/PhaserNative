@@ -10,6 +10,7 @@
 namespace JSC
 {
 
+class Class;
 class Value;
 
 class Object {
@@ -26,8 +27,9 @@ public:
     static Object MakeDate(TimeType time);
     static Object MakeError(const char *error, const char *stack = nullptr);
     static Object MakeFunctionWithCallback(const std::string &name, JSObjectCallAsFunctionCallback callAsFunction);
+    static Object MakeConstructor(Class &jsClass, JSObjectCallAsConstructorCallback callAsConstructor);
 
-    static Object getGlobalObject();
+    static Object GetGlobalObject();
 
     Object() {}
 
@@ -52,13 +54,17 @@ public:
     bool isConstructor() const;
     Object callAsConstructor(std::initializer_list<JSValueRef> args) const;
 
-    Value getProperty(const JSC::String& propName) const;
+    bool hasProperty(const String &propName) const;
+    bool hasProperty(const char *propName) const;
+    Value getProperty(const String& propName) const;
     Value getProperty(const char *propName) const;
     Value getPropertyAtIndex(unsigned int index) const;
-    void setProperty(const JSC::String& propName, const Value& value, JSPropertyAttributes attr = kJSPropertyAttributeNone);
+    void setProperty(const String& propName, const Value& value, JSPropertyAttributes attr = kJSPropertyAttributeNone);
     void setProperty(const char *propName, const Value& value, JSPropertyAttributes attr = kJSPropertyAttributeNone);
     void setPropertyAtIndex(unsigned int index, const Value& value);
-    std::vector<JSC::String> getPropertyNames() const;
+    bool deleteProperty(const String &propName);
+    bool deleteProperty(const char *propName);
+    std::vector<String> getPropertyNames() const;
     std::unordered_map<std::string, std::string> toJSONMap() const;
 
     void* getTypedArrayBytesPtr();

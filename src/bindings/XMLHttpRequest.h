@@ -23,13 +23,13 @@ public:
 
     static void OnRequest(void* ptr);
 
-private:
-
     static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 
     static JSC_FUNCTION(open);
     static JSC_FUNCTION(send);
+
+private:
 
     std::deque<RequestData> m_requestQueue;
 

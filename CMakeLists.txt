@@ -40,8 +40,6 @@ add_executable(${PROJECT_NAME}
     ### Javascript Bindings
     src/bindings/Body.cpp
     src/bindings/Body.h
-    src/bindings/Canvas.cpp
-    src/bindings/Canvas.h
     src/bindings/CanvasRenderingContext2D.cpp
     src/bindings/CanvasRenderingContext2D.h
     src/bindings/Console.cpp
@@ -50,14 +48,18 @@ add_executable(${PROJECT_NAME}
     src/bindings/Document.h
     src/bindings/DocumentElement.cpp
     src/bindings/DocumentElement.h
+    src/bindings/FileReader.cpp
+    src/bindings/FileReader.h
+    src/bindings/HTMLCanvasElement.cpp
+    src/bindings/HTMLCanvasElement.h
     src/bindings/Image.cpp
     src/bindings/Image.h
     src/bindings/Navigator.cpp
     src/bindings/Navigator.h
-    src/bindings/Phaser.cpp
-    src/bindings/Phaser.h
     src/bindings/Performance.cpp
     src/bindings/Performance.h
+    src/bindings/URL.cpp
+    src/bindings/URL.h
     src/bindings/WebGLRenderingContext.cpp
     src/bindings/WebGLRenderingContext.h
     src/bindings/Window.cpp

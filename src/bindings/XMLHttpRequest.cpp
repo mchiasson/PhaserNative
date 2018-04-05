@@ -7,13 +7,12 @@
 
 JSC_CONSTRUCTOR(XMLHttpRequest::Constructor)
 {
-    CreateInstance(object);
-    return object;
+    return CreateNativeInstance().object;
 }
 
 JSC_FINALIZER(XMLHttpRequest::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(XMLHttpRequest::open)
@@ -24,7 +23,7 @@ JSC_FUNCTION(XMLHttpRequest::open)
     JSC::Value user = argv[3];
     JSC::Value password = argv[4];
 
-    XMLHttpRequest &request = GetInstance(object);
+    XMLHttpRequest &request = GetNativeInstance(object);
 
     RequestData requestData;
 
@@ -60,7 +59,7 @@ JSC_FUNCTION(XMLHttpRequest::open)
 
 JSC_FUNCTION(XMLHttpRequest::send)
 {
-    XMLHttpRequest &request = GetInstance(object);
+    XMLHttpRequest &request = GetNativeInstance(object);
 
     RequestData &requestData = request.m_requestQueue.back();
 
@@ -106,7 +105,6 @@ JSC::Class &XMLHttpRequest::GetClassRef()
 
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "XMLHttpRequest";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
         classDefinition.staticFunctions = staticFunctions;
         classDefinition.callAsConstructor = XMLHttpRequest::Constructor;
         classDefinition.finalize = XMLHttpRequest::Finalizer;
@@ -118,7 +116,7 @@ JSC::Class &XMLHttpRequest::GetClassRef()
 
 void XMLHttpRequest::OnRequest(void* ptr)
 {
-    XMLHttpRequest &request = GetInstance((JSObjectRef)ptr);
+    XMLHttpRequest &request = GetNativeInstance((JSObjectRef)ptr);
 
     const RequestData &requestData = request.m_requestQueue.front();
 

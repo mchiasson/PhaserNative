@@ -19,25 +19,29 @@
     #error "Unknown/Unsupported OS"
 #endif
 
-JSC_INITIALIZER(Navigator::Initializer)
+JSC_CONSTRUCTOR(Navigator::Constructor)
 {
-    Navigator &navigator = CreateInstance(object);
-    navigator.object.setProperty("userAgent", JSC::Value(OS_NAME));
+    return CreateNativeInstance().object;
 }
 
 JSC_FINALIZER(Navigator::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC::Class &Navigator::GetClassRef()
 {
     if (!_class)
     {
+        static JSStaticValue staticValues[] = {
+            {"userAgent", JSC_CONSTANT(OS_NAME)},
+            {0, 0, 0, 0}
+        };
+
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "Navigator";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
-        classDefinition.initialize = Navigator::Initializer;
+        classDefinition.staticValues = staticValues;
+        classDefinition.callAsConstructor = Navigator::Constructor;
         classDefinition.finalize = Navigator::Finalizer;
         _class = JSC::Class(&classDefinition);
     }

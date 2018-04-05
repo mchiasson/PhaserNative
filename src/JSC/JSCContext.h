@@ -15,7 +15,7 @@ namespace JSC
 
         typedef void(*BindingInitializer)(GlobalContext &ctx);
 
-        static GlobalContext &GetInstance();
+        static GlobalContext &GetNativeInstance();
         ~GlobalContext();
 
         operator JSGlobalContextRef() const

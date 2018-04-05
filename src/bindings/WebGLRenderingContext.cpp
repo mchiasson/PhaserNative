@@ -6,12 +6,15 @@
 
 #include <SDL2/SDL_log.h>
 
-JSC_INITIALIZER(WebGLRenderingContext::Initializer) {
-    WebGLRenderingContext &context = CreateInstance(object);
+JSC_CONSTRUCTOR(WebGLRenderingContext::Constructor) {
+    WebGLRenderingContext &gl = CreateNativeInstance();
+    gl.object.setProperty("canvas", argv[0]);
+    return gl.object;
+
 }
 
 JSC_FINALIZER(WebGLRenderingContext::Finalizer) {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::attachShader) {
@@ -362,7 +365,7 @@ JSC_FUNCTION(WebGLRenderingContext::texImage2D) {
 
 #endif
 
-    Image &image = Image::GetInstance(imageVal.toObject());
+    Image &image = Image::GetNativeInstance(imageVal.toObject());
 
 try {
     glTexImage2D(target,
@@ -526,10 +529,9 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
 
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "WebGLRenderingContext";
-        classDefinition.attributes = kJSClassAttributeNone;
         classDefinition.staticFunctions = staticFunctions;
         classDefinition.staticValues = staticValues;
-        classDefinition.initialize = WebGLRenderingContext::Initializer;
+        classDefinition.callAsConstructor = WebGLRenderingContext::Constructor;
         classDefinition.finalize = WebGLRenderingContext::Finalizer;
         _class = JSC::Class(&classDefinition);
     }

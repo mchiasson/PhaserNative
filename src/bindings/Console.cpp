@@ -2,14 +2,14 @@
 
 #include <sstream>
 
-JSC_INITIALIZER(Console::Initializer)
+JSC_CONSTRUCTOR(Console::Constructor)
 {
-    CreateInstance(object);
+    return CreateNativeInstance().object;
 }
 
 JSC_FINALIZER(Console::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(Console::log) {
@@ -82,9 +82,8 @@ JSC::Class &Console::GetClassRef()
 
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "Console";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
         classDefinition.staticFunctions = staticFunctions;
-        classDefinition.initialize = Console::Initializer;
+        classDefinition.callAsConstructor = Console::Constructor;
         classDefinition.finalize = Console::Finalizer;
         _class = JSC::Class(&classDefinition);
     }

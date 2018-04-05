@@ -1,13 +1,13 @@
 #include "Body.h"
 
-JSC_INITIALIZER(Body::Initializer)
+JSC_CONSTRUCTOR(Body::Constructor)
 {
-    CreateInstance(object);
+    return CreateNativeInstance().object;
 }
 
 JSC_FINALIZER(Body::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(Body::appendChild) {
@@ -26,9 +26,8 @@ JSC::Class &Body::GetClassRef()
 
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "Body";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
         classDefinition.staticFunctions = staticFunctions;
-        classDefinition.initialize = Body::Initializer;
+        classDefinition.callAsConstructor = Body::Constructor;
         classDefinition.finalize = Body::Finalizer;
         _class = JSC::Class(&classDefinition);
     }

@@ -8,9 +8,7 @@ public:
 
     static JSC::Class &GetClassRef();
 
-private:
-
-    static JSC_INITIALIZER(Initializer);
+    static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 
     static JSC_FUNCTION(fillRect);
@@ -20,6 +18,8 @@ private:
 
     static JSC_PROPERTY_GET(getFillStyle);
     static JSC_PROPERTY_SET(setFillStyle);
+
+private:
 
     JSC::Value m_fillStyle;
 

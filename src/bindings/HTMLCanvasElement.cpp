@@ -1,34 +1,35 @@
-#include "Canvas.h"
+#include "HTMLCanvasElement.h"
 #include "CanvasRenderingContext2D.h"
 #include "WebGLRenderingContext.h"
 #include "PhaserNativeEvent.h"
 #include "PhaserNativeWindow.h"
 
-JSC_INITIALIZER(Canvas::Initializer) {
-    Canvas &instance = CreateInstance(object);
+JSC_CONSTRUCTOR(HTMLCanvasElement::Constructor) {
+    HTMLCanvasElement &canvas = CreateNativeInstance();
 
-    JSC::Object canvas2d = CanvasRenderingContext2D::CreateObject();
-    JSC::Object gl = WebGLRenderingContext::CreateObject();
+    JSC::Object canvas2d = CanvasRenderingContext2D::CreateJSObject({canvas.object});
+    JSC::Object gl = WebGLRenderingContext::CreateJSObject({canvas.object});
 
-    canvas2d.setProperty("canvas", instance.object);
-    gl.setProperty("canvas", instance.object);
+    canvas.object.setProperty("2d", canvas2d, kJSPropertyAttributeDontEnum);
+    canvas.object.setProperty("webgl", gl, kJSPropertyAttributeDontEnum);
+    canvas.object.setProperty("experimental-webgl", gl, kJSPropertyAttributeDontEnum);
 
-    instance.object.setProperty("2d", canvas2d);
-    instance.object.setProperty("webgl", gl);
-    instance.object.setProperty("experimental-webgl", gl);
+    return canvas.object;
 }
 
-JSC_FINALIZER(Canvas::Finalizer) {
-    FreeInstance(object);
+JSC_FINALIZER(HTMLCanvasElement::Finalizer) {
+    FreeNativeInstance(object);
 }
 
-JSC_FUNCTION(Canvas::getContext) {
+JSC_FUNCTION(HTMLCanvasElement::getContext) {
+
+    HTMLCanvasElement &instance = GetNativeInstance(object);
+
     JSC::String elementName = JSC::Value(argv[0]).toString();
-    JSC::Object instance = object;
-    return instance.getProperty(elementName);
+    return instance.object.getProperty(elementName);
 }
 
-JSC_FUNCTION(Canvas::addEventListener)
+JSC_FUNCTION(HTMLCanvasElement::addEventListener)
 {
     JSC::Value type = argv[0];
     JSC::Object listener = JSC::Value(argv[1]).toObject();
@@ -40,7 +41,7 @@ JSC_FUNCTION(Canvas::addEventListener)
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(Canvas::removeEventListener)
+JSC_FUNCTION(HTMLCanvasElement::removeEventListener)
 {
     JSC::Value type = argv[0];
     JSC::Object listener = JSC::Value(argv[1]).toObject();
@@ -56,7 +57,7 @@ JSC_FUNCTION(Canvas::removeEventListener)
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(Canvas::getBoundingClientRect) {
+JSC_FUNCTION(HTMLCanvasElement::getBoundingClientRect) {
 
     int x, y;
     SDL_GetWindowPosition(PhaserNativeWindow::window, &x, &y);
@@ -78,15 +79,15 @@ JSC_FUNCTION(Canvas::getBoundingClientRect) {
 }
 
 
-JSC::Class &Canvas::GetClassRef()
+JSC::Class &HTMLCanvasElement::GetClassRef()
 {
     if (!_class)
     {
         static JSStaticFunction staticFunctions[] = {
-            { "getContext", Canvas::getContext, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
-            { "addEventListener", Canvas::addEventListener, kJSPropertyAttributeDontDelete },
-            { "removeEventListener", Canvas::removeEventListener, kJSPropertyAttributeDontDelete },
-            { "getBoundingClientRect", Canvas::getBoundingClientRect, kJSPropertyAttributeDontDelete },
+            { "getContext", HTMLCanvasElement::getContext, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "addEventListener", HTMLCanvasElement::addEventListener, kJSPropertyAttributeDontDelete },
+            { "removeEventListener", HTMLCanvasElement::removeEventListener, kJSPropertyAttributeDontDelete },
+            { "getBoundingClientRect", HTMLCanvasElement::getBoundingClientRect, kJSPropertyAttributeDontDelete },
             { 0, 0, 0 }
         };
 
@@ -94,11 +95,10 @@ JSC::Class &Canvas::GetClassRef()
         classDefinition.className = "HTMLCanvasElement";
         classDefinition.attributes = kJSClassAttributeNone;
         classDefinition.staticFunctions = staticFunctions;
-        classDefinition.initialize = Canvas::Initializer;
-        classDefinition.finalize = Canvas::Finalizer;
+        classDefinition.callAsConstructor = HTMLCanvasElement::Constructor;
+        classDefinition.finalize = HTMLCanvasElement::Finalizer;
         _class = JSC::Class(&classDefinition);
 
-        JSC_GLOBAL_OBJECT.setProperty("HTMLCanvasElement", CreateObject());
     }
 
     return _class;

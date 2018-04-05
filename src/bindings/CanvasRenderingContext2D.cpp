@@ -5,13 +5,15 @@
 
 #include <PhaserGL.h>
 
-JSC_INITIALIZER(CanvasRenderingContext2D::Initializer) {
-    CreateInstance(object);
+JSC_CONSTRUCTOR(CanvasRenderingContext2D::Constructor) {
+    CanvasRenderingContext2D &canvas2d = CreateNativeInstance();
+    canvas2d.object.setProperty("canvas", argv[0]);
+    return canvas2d.object;
 }
 
 JSC_FINALIZER(CanvasRenderingContext2D::Finalizer) {
 
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
@@ -21,7 +23,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
     JSC::Value w = argv[2];
     JSC::Value h = argv[3];
 
-    CanvasRenderingContext2D &instance = GetInstance(object);
+    CanvasRenderingContext2D &instance = GetNativeInstance(object);
 
     nvgBeginPath(PhaserNativeWindow::vg);
     nvgRect(PhaserNativeWindow::vg, x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat());
@@ -98,12 +100,12 @@ JSC_FUNCTION(CanvasRenderingContext2D::putImageData)
 
 JSC_PROPERTY_GET(CanvasRenderingContext2D::getFillStyle)
 {
-    return GetInstance(object).m_fillStyle;
+    return GetNativeInstance(object).m_fillStyle;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle)
 {
-    GetInstance(object).m_fillStyle = value;
+    GetNativeInstance(object).m_fillStyle = value;
     return true;
 }
 
@@ -126,10 +128,9 @@ JSC::Class &CanvasRenderingContext2D::GetClassRef()
 
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "CanvasRenderingContext2D";
-        classDefinition.attributes = kJSClassAttributeNone;
         classDefinition.staticFunctions = staticFunctions;
         classDefinition.staticValues = staticValues;
-        classDefinition.initialize = CanvasRenderingContext2D::Initializer;
+        classDefinition.callAsConstructor = CanvasRenderingContext2D::Constructor;
         classDefinition.finalize = CanvasRenderingContext2D::Finalizer;
         _class = JSC::Class(&classDefinition);
     }

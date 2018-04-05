@@ -1,14 +1,14 @@
 #include "Performance.h"
 #include "SDL2/SDL_timer.h"
 
-JSC_INITIALIZER(Performance::Initializer)
+JSC_CONSTRUCTOR(Performance::Constructor)
 {
-    CreateInstance(object);
+    return CreateNativeInstance().object;
 }
 
 JSC_FINALIZER(Performance::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(Performance::now)
@@ -20,16 +20,17 @@ JSC::Class &Performance::GetClassRef()
 {
     if (!_class)
     {
-        static JSStaticFunction performanceStaticFunctions[] = {
+        static JSStaticFunction staticFunctions[] = {
             { "now", Performance::now, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { 0, 0, 0 }
         };
 
-        JSClassDefinition performanceClassDefinition = kJSClassDefinitionEmpty;
-        performanceClassDefinition.className = "performance";
-        performanceClassDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
-        performanceClassDefinition.staticFunctions = performanceStaticFunctions;
-        _class = JSC::Class(&performanceClassDefinition);
+        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
+        classDefinition.className = "performance";
+        classDefinition.staticFunctions = staticFunctions;
+        classDefinition.callAsConstructor = Performance::Constructor;
+        classDefinition.finalize = Performance::Finalizer;
+        _class = JSC::Class(&classDefinition);
     }
 
     return _class;

@@ -3,17 +3,13 @@
 #include "JSC/JSCHelpers.h"
 #include <SDL2/SDL_log.h>
 
-#include "CanvasRenderingContext2D.h"
-
-class Canvas : public JSC::Binding<Canvas>
+class HTMLCanvasElement : public JSC::Binding<HTMLCanvasElement>
 {
 public:
 
     static JSC::Class &GetClassRef();
 
-private:
-
-    static JSC_INITIALIZER(Initializer);
+    static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 
     static JSC_FUNCTION(getContext);

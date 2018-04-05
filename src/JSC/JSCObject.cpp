@@ -112,6 +112,11 @@ Object Object::MakeFunctionWithCallback(const std::string &name, JSObjectCallAsF
     return JSObjectMakeFunctionWithCallback(JSC_GLOBAL_CTX, String(name), callAsFunction);
 }
 
+Object Object::MakeConstructor(Class &jsClass, JSObjectCallAsConstructorCallback callAsConstructor)
+{
+    return JSObjectMakeConstructor(JSC_GLOBAL_CTX, jsClass, callAsConstructor);
+}
+
 Object::Object(JSObjectRef obj) :
     m_obj(obj)
 {
@@ -169,7 +174,7 @@ bool Object::operator!=(const Object &other)
     return !operator==(other);
 }
 
-Object Object::getGlobalObject()
+Object Object::GetGlobalObject()
 {
     return JSContextGetGlobalObject(JSC_GLOBAL_CTX);
 }
@@ -226,6 +231,16 @@ Object Object::callAsConstructor(std::initializer_list<JSValueRef> args) const
     return result;
 }
 
+bool Object::hasProperty(const String &propName) const
+{
+    return JSObjectHasProperty(JSC_GLOBAL_CTX, m_obj, propName);
+}
+
+bool Object::hasProperty(const char *propName) const
+{
+    return hasProperty(String(propName));
+}
+
 Value Object::getProperty(const String& propName) const {
     JSValueRef exception;
     Value property = JSObjectGetProperty(JSC_GLOBAL_CTX, m_obj, propName, &exception);
@@ -280,6 +295,23 @@ void Object::setPropertyAtIndex(unsigned int index, const Value& value) {
     }
 }
 
+bool Object::deleteProperty(const String &propName)
+{
+    JSValueRef exception = nullptr;
+    bool result = JSObjectDeleteProperty(JSC_GLOBAL_CTX, m_obj, propName, &exception);
+    if (!result)
+    {
+        std::stringstream ss;
+        ss << "Failed to delete property " << propName.getUTF8String();
+        throw Exception(exception, ss.str());
+    }
+    return result;
+}
+
+bool Object::deleteProperty(const char *propName)
+{
+    return deleteProperty(String(propName));
+}
 
 std::vector<String> Object::getPropertyNames() const {
     auto namesRef = JSObjectCopyPropertyNames(JSC_GLOBAL_CTX, m_obj);

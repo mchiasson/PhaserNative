@@ -3,12 +3,17 @@
 #include "PhaserNativeWindow.h"
 
 // DOM/HTML5 object subs/wrappers/implementations
-#include "bindings/Canvas.h"
+#include "bindings/Body.h"
 #include "bindings/CanvasRenderingContext2D.h"
 #include "bindings/Console.h"
 #include "bindings/Document.h"
+#include "bindings/DocumentElement.h"
+#include "bindings/HTMLCanvasElement.h"
 #include "bindings/Image.h"
 #include "bindings/Navigator.h"
+#include "bindings/Performance.h"
+#include "bindings/URL.h"
+#include "bindings/WebGLRenderingContext.h"
 #include "bindings/Window.h"
 #include "bindings/XMLHttpRequest.h"
 
@@ -46,14 +51,20 @@ int PhaserNativeApp::run(int argc, char* argv[])
         return -1;
     }
 
-    JSC::Object globalObject = JSC::Object::getGlobalObject();
+    JSC::Object globalObject = JSC_GLOBAL_OBJECT;
 
-    globalObject.setProperty("console", Console::CreateObject());
-    globalObject.setProperty("window", Window::CreateObject());
-    globalObject.setProperty("navigator", Navigator::CreateObject());
-    globalObject.setProperty("document", Document::CreateObject());
-    globalObject.setProperty("Image", Image::CreateObject());
-    globalObject.setProperty("XMLHttpRequest", XMLHttpRequest::CreateObject());
+    // register constructors. Without them, users won't be able to 'new' them
+    // from javascript.
+    globalObject.setProperty("Image", Image::GetJSConstructor());
+    globalObject.setProperty("URL", URL::GetJSConstructor());
+    globalObject.setProperty("XMLHttpRequest", XMLHttpRequest::GetJSConstructor());
+
+    // install default instances to mimic a web browser
+    globalObject.setProperty("console", Console::CreateJSObject({}));
+    globalObject.setProperty("document", Document::CreateJSObject({}));
+    globalObject.setProperty("navigator", Navigator::CreateJSObject({}));
+    globalObject.setProperty("performance", Performance::CreateJSObject({}));
+    globalObject.setProperty("window", Window::CreateJSObject({}));
 
     // evaluate phaser.js
     JSC::evaluateScriptFromFile("phaser.js");

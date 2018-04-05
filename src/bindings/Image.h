@@ -12,13 +12,13 @@ public:
 
     static void OnImageDecoded(void* imageData);
 
-private:
-
     static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 
     static JSC_PROPERTY_GET(getSrc);
     static JSC_PROPERTY_SET(setSrc);
+
+private:
     JSC::Value m_src;
 
     uint8_t *m_pixels = nullptr;

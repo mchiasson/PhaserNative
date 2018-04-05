@@ -1,13 +1,13 @@
 #include "DocumentElement.h"
 
-JSC_INITIALIZER(DocumentElement::Initializer)
+JSC_CONSTRUCTOR(DocumentElement::Constructor)
 {
-    CreateInstance(object);
+    return CreateNativeInstance().object;
 }
 
 JSC_FINALIZER(DocumentElement::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC::Class &DocumentElement::GetClassRef()
@@ -24,8 +24,9 @@ JSC::Class &DocumentElement::GetClassRef()
 
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "DocumentElement";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
         classDefinition.staticValues = staticValues;
+        classDefinition.callAsConstructor = DocumentElement::Constructor;
+        classDefinition.finalize = DocumentElement::Finalizer;
         _class = JSC::Class(&classDefinition);
     }
 

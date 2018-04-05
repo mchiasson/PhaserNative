@@ -2,32 +2,35 @@
 #include <SDL2/SDL_log.h>
 
 #include "DocumentElement.h"
-#include "Canvas.h"
+#include "HTMLCanvasElement.h"
 #include "Body.h"
 
-JSC_INITIALIZER(Document::Initializer)
+JSC_CONSTRUCTOR(Document::Constructor)
 {
-    Document &instance = CreateInstance(object);
+    Document &document = CreateNativeInstance();
 
-    instance.object.setProperty("body", Body::CreateObject());
-    instance.object.setProperty("documentElement", DocumentElement::CreateObject());
-    instance.object.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
+    document.object.setProperty("body", Body::CreateJSObject({}));
+    document.object.setProperty("documentElement", DocumentElement::CreateJSObject({}));
+    document.object.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
+
+    return document.object;
 }
 
 JSC_FINALIZER(Document::Finalizer)
 {
-    FreeInstance(object);
+    FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(Document::createElement) {
-    JSC::String elementName = JSC::Value(argv[0]).toString();
+    std::string elementName = JSC::Value(argv[0]).toString().getUTF8String();
+    SDL_Log("Document.createElement('%s')\n", elementName.c_str());
     if (elementName == "canvas")
     {
-        return Canvas::CreateObject();
+        return HTMLCanvasElement::CreateJSObject({});
     }
     else
     {
-        SDL_LogWarn(0, "Document.createElement('%s') is currently not supported.", elementName.getUTF8String().c_str());
+        SDL_LogWarn(0, "Document.createElement('%s') is currently not supported.\n", elementName.c_str());
         return JSC::Object::MakeDefault();
     }
 }
@@ -37,15 +40,15 @@ JSC::Class &Document::GetClassRef()
     if (!_class)
     {
         static JSStaticFunction staticFunctions[] = {
-            { "createElement", Document::createElement, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "createElement", Document::createElement, kJSPropertyAttributeDontDelete },
             { 0, 0, 0 }
         };
     
         JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
         classDefinition.className = "Document";
-        classDefinition.attributes = kJSClassAttributeNoAutomaticPrototype;
+        classDefinition.attributes = kJSClassAttributeNone;
         classDefinition.staticFunctions = staticFunctions;
-        classDefinition.initialize = Document::Initializer;
+        classDefinition.callAsConstructor = Document::Constructor;
         classDefinition.finalize = Document::Finalizer;
         _class = JSC::Class(&classDefinition);
     }

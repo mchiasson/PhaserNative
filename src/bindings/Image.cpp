@@ -36,27 +36,27 @@ struct ImageData
 };
 
 JSC_CONSTRUCTOR(Image::Constructor) {
-    Image &instance = CreateInstance(object);
+    Image &image = CreateNativeInstance();
 
-    if (argc > 0) { instance.object.setProperty("width", argv[0]); }
-    if (argc > 1) { instance.object.setProperty("height", argv[1]); }
+    if (argc > 0) { image.object.setProperty("width", argv[0]); }
+    if (argc > 1) { image.object.setProperty("height", argv[1]); }
 
-    return object;
+    return image.object;
 }
 
 JSC_FINALIZER(Image::Finalizer) {
-    stbi_image_free(CreateInstance(object).m_pixels);
-    FreeInstance(object);
+    stbi_image_free(GetNativeInstance(object).m_pixels);
+    FreeNativeInstance(object);
 }
 
 JSC_PROPERTY_GET(Image::getSrc)
 {
-    return GetInstance(object).m_src;
+    return GetNativeInstance(object).m_src;
 }
 
 JSC_PROPERTY_SET(Image::setSrc)
 {
-     GetInstance(object).m_src = value;
+     GetNativeInstance(object).m_src = value;
 
 
      std::thread t([object] {
@@ -64,7 +64,7 @@ JSC_PROPERTY_SET(Image::setSrc)
          ImageData *imageData = new ImageData();
          imageData->object = object;
 
-         std::string src = GetInstance(object).m_src.toString().getUTF8String();
+         std::string src = GetNativeInstance(object).m_src.toString().getUTF8String();
 
          std::string base64pngMarker = "data:image/png;base64,";
 
@@ -131,7 +131,7 @@ void Image::OnImageDecoded(void* ptr)
 {
     ImageData *imageData = reinterpret_cast<ImageData *>(ptr);
 
-    Image &instance = GetInstance(imageData->object);
+    Image &instance = GetNativeInstance(imageData->object);
     instance.object.setProperty("complete", JSC::Value(true));
     instance.object.setProperty("currentSrc", instance.m_src);
     instance.object.setProperty("naturalWidth", JSC::Value(imageData->width));

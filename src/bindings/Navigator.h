@@ -7,8 +7,6 @@ class Navigator : public JSC::Binding<Navigator>
 public:
     static JSC::Class &GetClassRef();
 
-private:
-
-    static JSC_INITIALIZER(Initializer);
+    static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 };

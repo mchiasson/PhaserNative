@@ -10,9 +10,7 @@ public:
 
     static void OnRequestAnimationFrame(void* ptr, double timestamp);
 
-private:
-
-    static JSC_INITIALIZER(Initializer);
+    static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 
     static JSC_FUNCTION(createTimer);

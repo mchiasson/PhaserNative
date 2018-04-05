@@ -8,8 +8,8 @@ class Console : public JSC::Binding<Console>
 {
 public:
     static JSC::Class &GetClassRef();
-private:
-    static JSC_INITIALIZER(Initializer);
+
+    static JSC_CONSTRUCTOR(Constructor);
     static JSC_FINALIZER(Finalizer);
 
     static JSC_FUNCTION(log);

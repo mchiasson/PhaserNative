@@ -3,7 +3,7 @@
 namespace JSC
 {
 
-GlobalContext &GlobalContext::GetInstance() {
+GlobalContext &GlobalContext::GetNativeInstance() {
     static GlobalContext context;
     return context;
 }
