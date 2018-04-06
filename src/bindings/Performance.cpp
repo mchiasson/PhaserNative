@@ -13,7 +13,7 @@ JSC_FINALIZER(Performance::Finalizer)
 
 JSC_FUNCTION(Performance::now)
 {
-    return JSC::Value(((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency()));
+    return JSC::Value(((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency() * 1000.0));
 }
 
 JSC::Class &Performance::GetClassRef()

@@ -217,7 +217,7 @@ void PhaserNativeApp::processEvent()
             }
             else if (e.type == PhaserNativeEvent::RequestAnimationFrame)
             {
-                Window::OnRequestAnimationFrame(e.user.data1, ((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency()));
+                Window::OnRequestAnimationFrame(e.user.data1, ((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency() * 1000.0));
 //                m_window.renderStats();
                 m_window.swap();
             }
