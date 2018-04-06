@@ -118,6 +118,9 @@ public:
 
     std::string createJSONString(unsigned indent = 0) const;
 
+    void protect();
+    void unprotect();
+
 private:
 
     JSValueRef m_value = nullptr;

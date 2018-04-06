@@ -56,39 +56,64 @@ JSC_PROPERTY_GET(Image::getSrc)
 
 JSC_PROPERTY_SET(Image::setSrc)
 {
-     GetNativeInstance(object).m_src = value;
-
+     Image &instance = GetNativeInstance(object);
+     instance.object.protect();
+     instance.m_src = value;
+     instance.m_src.protect();
 
      std::thread t([object] {
+
+         Image &image = GetNativeInstance(object);
 
          ImageData *imageData = new ImageData();
          imageData->object = object;
 
-         std::string src = GetNativeInstance(object).m_src.toString().getUTF8String();
-
-         std::string base64pngMarker = "data:image/png;base64,";
-
-         if(src.compare(0, base64pngMarker.length(), base64pngMarker) == 0)
+         if (image.m_src.isString())
          {
-             std::string base64Data = src.substr(base64pngMarker.length());
-             std::string data = decode64(base64Data);
+             std::string src = image.m_src.toString().getUTF8String();
+             std::string base64pngMarker = "data:image/png;base64,";
 
-             imageData->pixels = stbi_load_from_memory((stbi_uc*)data.c_str(), data.size(), &imageData->width, &imageData->height, &imageData->channels, 4);
+             if(src.compare(0, base64pngMarker.length(), base64pngMarker) == 0)
+             {
+                 std::string base64Data = src.substr(base64pngMarker.length());
+                 std::string data = decode64(base64Data);
+
+                 imageData->pixels = stbi_load_from_memory((stbi_uc*)data.c_str(), data.size(), &imageData->width, &imageData->height, &imageData->channels, 4);
+             }
+             else
+             {
+                 FILE* imageFile = fopen(src.c_str(), "rb");
+
+                 if(!imageFile)
+                 {
+                     SDL_LogError(0, "Unable to open file '%s'\n", src.c_str());
+                     delete imageData;
+                     return;
+                 }
+
+                 imageData->pixels = stbi_load_from_file(imageFile, &imageData->width, &imageData->height, &imageData->channels, 4);
+                 fclose(imageFile);
+             }
+         }
+         else if (image.m_src.isObject())
+         {
+             JSC::Object blob = image.m_src.toObject();
+
+             JSC::Object arrayBuffer = blob.getProperty("_buffer").toObject();
+
+             stbi_uc *buffer = (stbi_uc *)arrayBuffer.getArrayBufferBytesPtr();
+             int size = arrayBuffer.getArrayBufferByteLength();
+             imageData->pixels = stbi_load_from_memory(buffer, size, &imageData->width, &imageData->height, &imageData->channels, 4);
          }
          else
          {
-             FILE* imageFile = fopen(src.c_str(), "rb");
-
-             if(!imageFile)
-             {
-                 SDL_LogError(0, "Unable to open file '%s'\n", src.c_str());
-                 delete imageData;
-                 return;
-             }
-
-             imageData->pixels = stbi_load_from_file(imageFile, &imageData->width, &imageData->height, &imageData->channels, 4);
-             fclose(imageFile);
+             SDL_LogError(0, "Unsupported image source type. Contact a Developer!\n");
+             delete imageData;
+             image.m_src.unprotect();
+             image.object.unprotect();
+             return;
          }
+
 
 
          SDL_Event event;
@@ -96,7 +121,6 @@ JSC_PROPERTY_SET(Image::setSrc)
          event.type = PhaserNativeEvent::ImageDecoded;
          event.user.data1 = imageData;
          SDL_PushEvent(&event);
-
      });
 
      t.detach();
@@ -160,6 +184,8 @@ void Image::OnImageDecoded(void* ptr)
         }
     }
 
+    instance.m_src.unprotect();
+    instance.object.unprotect();
 
     delete imageData;
 }

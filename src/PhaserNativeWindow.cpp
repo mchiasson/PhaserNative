@@ -209,9 +209,9 @@ void PhaserNativeWindow::renderStats()
 
     startGPUTimer(&gpuTimer);
 
-    glViewport(0, 0, fbWidth, fbHeight);
-    glClearColor(m_backgroundColor[0], m_backgroundColor[1], m_backgroundColor[2], m_backgroundColor[3]);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//    glViewport(0, 0, fbWidth, fbHeight);
+//    glClearColor(m_backgroundColor[0], m_backgroundColor[1], m_backgroundColor[2], m_backgroundColor[3]);
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     nvgBeginFrame(vg, width, height,  fbWidth / (float) width);
 

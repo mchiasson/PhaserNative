@@ -190,4 +190,21 @@ String Value::toString() const
     return jsStr;
 }
 
+void Value::protect()
+{
+    if (m_value)
+    {
+        JSValueProtect(JSC_GLOBAL_CTX, m_value);
+    }
+}
+
+void Value::unprotect()
+{
+    if (m_value)
+    {
+        JSValueUnprotect(JSC_GLOBAL_CTX, m_value);
+    }
+}
+
+
 }

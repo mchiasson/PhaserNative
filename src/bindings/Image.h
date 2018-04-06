@@ -18,7 +18,6 @@ public:
     static JSC_PROPERTY_GET(getSrc);
     static JSC_PROPERTY_SET(setSrc);
 
-private:
     JSC::Value m_src;
 
     uint8_t *m_pixels = nullptr;

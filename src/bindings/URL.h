@@ -3,10 +3,11 @@
 #include "JSC/JSCHelpers.h"
 
 
-class URL : public JSC::Binding<URL> {
+class URL {
 public:
-    static JSC::Class &GetClassRef();
+    static void RegisterClass();
 
-    static JSC_CONSTRUCTOR(Constructor);
-    static JSC_FINALIZER(Finalizer);
+    static JSC_FUNCTION(url);
+    static JSC_FUNCTION(createObjectURL);
+    static JSC_FUNCTION(revokeObjectURL);
 };

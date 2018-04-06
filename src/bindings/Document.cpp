@@ -23,7 +23,6 @@ JSC_FINALIZER(Document::Finalizer)
 
 JSC_FUNCTION(Document::createElement) {
     std::string elementName = JSC::Value(argv[0]).toString().getUTF8String();
-    SDL_Log("Document.createElement('%s')\n", elementName.c_str());
     if (elementName == "canvas")
     {
         return HTMLCanvasElement::CreateJSObject({});

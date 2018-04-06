@@ -33,8 +33,8 @@ private:
 
     bool fullScreen = false;
     bool resizable = true;
-    int width = 1280;
-    int height = 720;
+    int width = 800;
+    int height = 600;
     std::string title = "PhaserNative";
     float m_backgroundColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 

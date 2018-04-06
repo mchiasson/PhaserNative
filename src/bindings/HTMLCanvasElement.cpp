@@ -10,6 +10,9 @@ JSC_CONSTRUCTOR(HTMLCanvasElement::Constructor) {
     JSC::Object canvas2d = CanvasRenderingContext2D::CreateJSObject({canvas.object});
     JSC::Object gl = WebGLRenderingContext::CreateJSObject({canvas.object});
 
+    canvas2d.setProperty("canvas", canvas.object);
+    gl.setProperty("canvas", canvas.object);
+
     canvas.object.setProperty("2d", canvas2d, kJSPropertyAttributeDontEnum);
     canvas.object.setProperty("webgl", gl, kJSPropertyAttributeDontEnum);
     canvas.object.setProperty("experimental-webgl", gl, kJSPropertyAttributeDontEnum);

@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include <boost/type_index.hpp>
+
 #define JSC_GLOBAL_CTX JSC::GlobalContext::GetNativeInstance()
 #define JSC_GLOBAL_OBJECT JSC::Object::GetGlobalObject()
 
@@ -45,15 +47,31 @@ public:
 
     static JSC::Object GetJSConstructor()
     {
-        if (!_constructor)
+        JSC::Object global = JSC_GLOBAL_OBJECT;
+        std::string className = GetClassName();
+
+#ifndef NDEBUG
+        if (!global.hasProperty(className))
         {
-            // this is how we force subclasses to write their GetClassRef
-            // implementation. If you get an error on this line, you forgot to
-            // implement 'static JSC::Class &GetClassRef()' in the subclass.
-            _constructor = JSC::Object::MakeConstructor(C::GetClassRef(), C::Constructor);
-            _constructor.protect();
+            throw new Exception("Class %s hasn't been registered. Constructor cannot be found.\n", GetClassName().c_str());
         }
-        return _constructor;
+#endif
+
+        return global.getProperty(className).toObject();
+    }
+
+    static void RegisterClass(JSPropertyAttributes attr = kJSPropertyAttributeNone)
+    {
+        std::string className = GetClassName();
+        JSC::Object global = JSC_GLOBAL_OBJECT;
+        if (!global.hasProperty(className))
+        {
+            global.setProperty(className, JSC::Object::MakeConstructor(C::GetClassRef(), C::Constructor), attr);
+        }
+    }
+
+    static std::string GetClassName() {
+        return boost::typeindex::type_id_with_cvr<C>().pretty_name();
     }
 
     operator JSObjectRef() const {
@@ -115,8 +133,6 @@ public:
 protected:
 
     static Class _class;
-    static Object _constructor;
-
 
 private:
     bool _inUse = false;
@@ -125,7 +141,6 @@ private:
 };
 
 template<class C> Class Binding<C>::_class;
-template<class C> Object Binding<C>::_constructor;
 template<class C> std::vector<C> JSC::Binding<C>::_pool;
 
 

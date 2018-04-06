@@ -112,7 +112,7 @@ Object Object::MakeFunctionWithCallback(const std::string &name, JSObjectCallAsF
     return JSObjectMakeFunctionWithCallback(JSC_GLOBAL_CTX, String(name), callAsFunction);
 }
 
-Object Object::MakeConstructor(Class &jsClass, JSObjectCallAsConstructorCallback callAsConstructor)
+Object Object::MakeConstructor(JSClassRef jsClass, JSObjectCallAsConstructorCallback callAsConstructor)
 {
     return JSObjectMakeConstructor(JSC_GLOBAL_CTX, jsClass, callAsConstructor);
 }
@@ -123,15 +123,13 @@ Object::Object(JSObjectRef obj) :
 }
 
 Object::Object(const Object& other) :
-    m_obj(other.m_obj),
-    m_isProtected(other.m_isProtected)
+    m_obj(other.m_obj)
 {
 
 }
 
 Object::Object(Object&& other) :
-    m_obj(std::move(other.m_obj)),
-    m_isProtected(std::move(other.m_isProtected))
+    m_obj(std::move(other.m_obj))
 {
 }
 
@@ -140,26 +138,15 @@ Object::~Object()
 {
     if (m_obj)
     {
-        if (m_isProtected)
-        {
-            JSValueUnprotect(JSC_GLOBAL_CTX, m_obj);
-        }
         m_obj = nullptr;
     }
 }
 
 Object& Object::operator=(Object&& other)
 {
-    if (m_obj && m_isProtected)
-    {
-        JSValueUnprotect(JSC_GLOBAL_CTX, m_obj);
-    }
-
     m_obj         = other.m_obj;
-    m_isProtected = other.m_isProtected;
 
     other.m_obj = nullptr;
-    other.m_isProtected = false;
 
     return *this;
 }
@@ -424,19 +411,17 @@ size_t Object::getArrayBufferByteLength()
 
 void Object::protect()
 {
-    if (m_obj && !m_isProtected)
+    if (m_obj)
     {
         JSValueProtect(JSC_GLOBAL_CTX, m_obj);
-        m_isProtected = true;
     }
 }
 
 void Object::unprotect()
 {
-    if (m_obj && m_isProtected)
+    if (m_obj)
     {
         JSValueUnprotect(JSC_GLOBAL_CTX, m_obj);
-        m_isProtected = false;
     }
 }
 

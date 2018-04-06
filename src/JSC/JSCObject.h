@@ -27,7 +27,7 @@ public:
     static Object MakeDate(TimeType time);
     static Object MakeError(const char *error, const char *stack = nullptr);
     static Object MakeFunctionWithCallback(const std::string &name, JSObjectCallAsFunctionCallback callAsFunction);
-    static Object MakeConstructor(Class &jsClass, JSObjectCallAsConstructorCallback callAsConstructor);
+    static Object MakeConstructor(JSClassRef jsClass, JSObjectCallAsConstructorCallback callAsConstructor);
 
     static Object GetGlobalObject();
 
@@ -95,7 +95,6 @@ public:
 private:
 
     JSObjectRef m_obj = nullptr;
-    bool m_isProtected = false;
 
 };
 

@@ -7,10 +7,12 @@
 #include <SDL2/SDL_log.h>
 
 JSC_CONSTRUCTOR(WebGLRenderingContext::Constructor) {
-    WebGLRenderingContext &gl = CreateNativeInstance();
-    gl.object.setProperty("canvas", argv[0]);
-    return gl.object;
 
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    return CreateNativeInstance().object;
 }
 
 JSC_FINALIZER(WebGLRenderingContext::Finalizer) {
@@ -21,7 +23,7 @@ JSC_FUNCTION(WebGLRenderingContext::attachShader) {
     JSC::Value program = argv[0];
     JSC::Value shader = argv[1];
 
-    glAttachShader(program, shader);
+    phaserGLCheckErrorDebug( glAttachShader(program, shader) );
 
     return JSC::Value::MakeUndefined();
 }
@@ -39,7 +41,7 @@ JSC_FUNCTION(WebGLRenderingContext::bindBuffer) {
     }
 #endif
 
-    glBindBuffer(target, buffer);
+    phaserGLCheckErrorDebug( glBindBuffer(target, buffer) );
     return JSC::Value::MakeUndefined();
 }
 
@@ -55,7 +57,7 @@ JSC_FUNCTION(WebGLRenderingContext::bindTexture) {
     }
 #endif
 
-    glBindTexture(target, texture);
+    phaserGLCheckErrorDebug( glBindTexture(target, texture) );
     return JSC::Value::MakeUndefined();
 }
 
@@ -71,7 +73,7 @@ JSC_FUNCTION(WebGLRenderingContext::blendEquation) {
     }
 #endif
 
-    glBlendEquation(mode);
+    phaserGLCheckErrorDebug( glBlendEquation(mode) );
     return JSC::Value::MakeUndefined();
 }
 
@@ -94,11 +96,9 @@ JSC_FUNCTION(WebGLRenderingContext::blendFunc) {
     }
 #endif
 
-    glBlendFunc(sfactor, dfactor);
+    phaserGLCheckErrorDebug( glBlendFunc(sfactor, dfactor) );
     return JSC::Value::MakeUndefined();
 }
-
-
 
 JSC_FUNCTION(WebGLRenderingContext::bufferData) {
 
@@ -122,19 +122,40 @@ JSC_FUNCTION(WebGLRenderingContext::bufferData) {
 
     if (dataOrSize.isNumber())
     {
-        glBufferData(target, dataOrSize, nullptr, usage);
+        phaserGLCheckErrorDebug( glBufferData(target, dataOrSize, nullptr, usage) );
     }
     else if (dataOrSize.isObject())
     {
         JSC::Object arrayBuffer = dataOrSize.toObject();
         void* data = arrayBuffer.getArrayBufferBytesPtr();
         GLsizeiptr size = arrayBuffer.getArrayBufferByteLength();
-        glBufferData(target, size,  data, usage);
+        phaserGLCheckErrorDebug( glBufferData(target, size,  data, usage) );
     }
     else
     {
         *exception = JSC::Object::MakeError("Unknown type! Please contact a developer");
     }
+
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::bufferSubData) {
+
+    JSC::Value target  = argv[0];
+    JSC::Value offset  = argv[1];
+    JSC::Object srcData = JSC::Value(argv[2]).toObject();
+
+#ifndef NDEBUG
+    if (target.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported target! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
+
+    void* data = srcData.getTypedArrayBytesPtr();
+    GLsizeiptr size = srcData.getTypedArrayByteLength();
+    phaserGLCheckErrorDebug( glBufferSubData(target, offset, size, data) );
 
     return JSC::Value::MakeUndefined();
 }
@@ -158,20 +179,21 @@ JSC_FUNCTION(WebGLRenderingContext::clearColor) {
 
 JSC_FUNCTION(WebGLRenderingContext::compileShader) {
     JSC::Value shader = argv[0];
-    glCompileShader(shader);
+    phaserGLCheckErrorDebug( glCompileShader(shader) );
     return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(WebGLRenderingContext::createBuffer)
 {
     GLuint buffer;
-    glCreateBuffers(1, &buffer);
+    phaserGLCheckErrorDebug( glGenBuffers(1, &buffer) );
     return JSC::Value(buffer);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::createProgram)
 {
-    return JSC::Value(glCreateProgram());
+    auto program = phaserGLCheckErrorDebug( glCreateProgram() );
+    return JSC::Value(program);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::createShader)
@@ -186,12 +208,14 @@ JSC_FUNCTION(WebGLRenderingContext::createShader)
     }
 #endif
 
-    return JSC::Value(glCreateShader(type));
+    auto shader = phaserGLCheckErrorDebug( glCreateShader(type) );
+
+    return JSC::Value(shader);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::createTexture) {
     GLuint texture;
-    glCreateTextures(GL_TEXTURE_2D, 1, &texture);
+    phaserGLCheckErrorDebug( glGenTextures(1, &texture) );
     return JSC::Value(texture);
 }
 
@@ -206,7 +230,17 @@ JSC_FUNCTION(WebGLRenderingContext::disable) {
     }
 #endif
 
-    glDisable(cap);
+    phaserGLCheckErrorDebug( glDisable(cap) );
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::drawArrays)
+{
+    JSC::Value mode = argv[0];
+    JSC::Value first = argv[1];
+    JSC::Value count = argv[2];
+
+    phaserGLCheckErrorDebug( glDrawArrays(mode, first, count) );
     return JSC::Value::MakeUndefined();
 }
 
@@ -222,8 +256,22 @@ JSC_FUNCTION(WebGLRenderingContext::enable) {
     }
 #endif
 
-    glEnable(cap);
+    phaserGLCheckErrorDebug( glEnable(cap) );
     return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::enableVertexAttribArray) {
+    JSC::Value index = argv[0];
+    phaserGLCheckErrorDebug( glEnableVertexAttribArray(index) );
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::getAttribLocation) {
+    JSC::Value program = argv[0];
+    JSC::Value name = argv[1];
+
+    auto location = phaserGLCheckErrorDebug( glGetAttribLocation(program, name.toString().getUTF8String().c_str()) );
+    return JSC::Value(location);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::getProgramParameter) {
@@ -239,7 +287,7 @@ JSC_FUNCTION(WebGLRenderingContext::getProgramParameter) {
 #endif
 
     GLint params;
-    glGetProgramiv(shader, pname, &params);
+    phaserGLCheckErrorDebug( glGetProgramiv(shader, pname, &params) );
 
     return JSC::Value(params);
 }
@@ -257,9 +305,17 @@ JSC_FUNCTION(WebGLRenderingContext::getShaderParameter) {
 #endif
 
     GLint params;
-    glGetShaderiv(shader, pname, &params);
+    phaserGLCheckErrorDebug( glGetShaderiv(shader, pname, &params) );
 
     return JSC::Value(params);
+}
+
+JSC_FUNCTION(WebGLRenderingContext::getUniformLocation) {
+
+    JSC::Value program = argv[0];
+    JSC::Value name = argv[1];
+    auto location = phaserGLCheckErrorDebug( glGetUniformLocation(program, name.toString().getUTF8String().c_str()) );
+    return JSC::Value(location);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::getSupportedExtensions) {
@@ -269,13 +325,13 @@ JSC_FUNCTION(WebGLRenderingContext::getSupportedExtensions) {
     if (phaserGLSupport(GL_VERSION_3_0) || phaserGLSupport(GL_ES_VERSION_3_0)) {
         GLint i = 0;
         GLint nExtensionsCount = 0;
-        glGetIntegerv(GL_NUM_EXTENSIONS, &nExtensionsCount);
+        phaserGLCheckErrorDebug( glGetIntegerv(GL_NUM_EXTENSIONS, &nExtensionsCount) );
         while(i < nExtensionsCount) {
             JSC::Value extension = (const char*)glGetStringi(GL_EXTENSIONS, i++);
             extensions.push_back(extension);
         }
     } else {
-        const char* extensionsStr = (const char*)glGetString(GL_EXTENSIONS);
+        const char* extensionsStr = (const char*) phaserGLCheckErrorDebug( glGetString(GL_EXTENSIONS) );
         while (extensionsStr) {
             const char* spacerPos = strchr(extensionsStr, ' ');
             size_t extensionsStrLength = spacerPos ? (khronos_usize_t)(spacerPos++ - extensionsStr) : strlen(extensionsStr);
@@ -291,7 +347,7 @@ JSC_FUNCTION(WebGLRenderingContext::getSupportedExtensions) {
 
 JSC_FUNCTION(WebGLRenderingContext::linkProgram) {
     JSC::Value program = argv[0];
-    glLinkProgram(program);
+    phaserGLCheckErrorDebug( glLinkProgram(program) );
     return JSC::Value::MakeUndefined();
 }
 
@@ -303,17 +359,17 @@ JSC_FUNCTION(WebGLRenderingContext::shaderSource)
     const char *string = source.c_str();
     GLint length = source.size();
 
-    glShaderSource(shader, 1, &string, &length);
+    phaserGLCheckErrorDebug( glShaderSource(shader, 1, &string, &length) );
 
     return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(WebGLRenderingContext::pixelStorei) {
-    JSC::Value pname = argv[0];
+    JSC::Value pnameVal = argv[0];
     JSC::Value param = argv[1];
 
 #ifndef NDEBUG
-    if (pname.isUndefined())
+    if (pnameVal.isUndefined())
     {
         *exception = JSC::Object::MakeError("unsupported pname! Please contact a developer");
         return JSC::Value::MakeUndefined();
@@ -326,8 +382,15 @@ JSC_FUNCTION(WebGLRenderingContext::pixelStorei) {
     }
 #endif
 
-    glPixelStorei(pname, param);
+    int pname = pnameVal.toInteger();
+    if (!(pname == GL_UNPACK_COLORSPACE_CONVERSION_WEBGL ||
+          pname == GL_UNPACK_FLIP_Y_WEBGL ||
+          pname == GL_UNPACK_PREMULTIPLY_ALPHA_WEBGL))
+    {
+        phaserGLCheckErrorDebug( glPixelStorei(pname, param) );
+    }
     return JSC::Value::MakeUndefined();
+
 }
 
 JSC_FUNCTION(WebGLRenderingContext::texImage2D) {
@@ -367,18 +430,20 @@ JSC_FUNCTION(WebGLRenderingContext::texImage2D) {
 
     Image &image = Image::GetNativeInstance(imageVal.toObject());
 
-try {
-    glTexImage2D(target,
-                 level,
-                 internalformat,
-                 image.object.getProperty("width"),
-                 image.object.getProperty("height"),
-                 0,
-                 format,
-                 type,
-                 image.m_pixels);
+    try
+    {
+        phaserGLCheckErrorDebug( glTexImage2D(target,
+                                              level,
+                                              internalformat,
+                                              image.object.getProperty("width"),
+                                              image.object.getProperty("height"),
+                                              0,
+                                              format,
+                                              type,
+                                              image.m_pixels) );
 
-    } catch (JSC::Exception &e)
+    }
+    catch (JSC::Exception &e)
     {
         *exception = JSC::Object::MakeError(e.what(), e.getStack().c_str());
     }
@@ -411,7 +476,52 @@ JSC_FUNCTION(WebGLRenderingContext::texParameteri) {
     }
 #endif
 
-    glTexParameteri(target, pname, param);
+    phaserGLCheckErrorDebug( glTexParameteri(target, pname, param) );
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::useProgram)
+{
+    JSC::Value program = argv[0];
+    phaserGLCheckErrorDebug( glUseProgram(program) );
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::uniformMatrix4fv)
+{
+    JSC::Value location = argv[0];
+    JSC::Value transpose = argv[1];
+    JSC::Value value = argv[2];
+
+    phaserGLCheckErrorDebug( glUniformMatrix4fv(location, 1, transpose.toBoolean(), (const GLfloat*)value.toObject().getTypedArrayBytesPtr()) );
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::vertexAttribPointer) {
+
+    JSC::Value indexVal = argv[0];
+    JSC::Value sizeVal = argv[1];
+    JSC::Value typeVal = argv[2];
+    JSC::Value normalizedVal = argv[3];
+    JSC::Value strideVal = argv[4];
+    JSC::Value offsetVal = argv[5];
+
+#ifndef NDEBUG
+    if (typeVal.isUndefined())
+    {
+        *exception = JSC::Object::MakeError("unsupported target! Please contact a developer");
+        return JSC::Value::MakeUndefined();
+    }
+#endif
+
+    GLuint index = indexVal.toUnsignedInteger();
+    GLint size = sizeVal.toInteger();
+    GLenum type = typeVal.toUnsignedInteger();
+    GLboolean normalized = normalizedVal.toBoolean() ? GL_TRUE : GL_FALSE;
+    GLsizei stride = strideVal.toInteger();
+    void* offset = (void*)offsetVal.toLongInteger();
+
+    phaserGLCheckErrorDebug( glVertexAttribPointer(index, size, type, normalized, stride, offset) );
     return JSC::Value::MakeUndefined();
 }
 
@@ -420,7 +530,7 @@ JSC_FUNCTION(WebGLRenderingContext::viewport) {
     JSC::Value y      = argv[1];
     JSC::Value width  = argv[2];
     JSC::Value height = argv[3];
-    glViewport(x, y, width, height);
+    phaserGLCheckErrorDebug( glViewport(x, y, width, height) );
     return JSC::Value::MakeUndefined();
 }
 
@@ -438,6 +548,7 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_FUNC(blendEquation),
             JSC_GL_FUNC(blendFunc),
             JSC_GL_FUNC(bufferData),
+            JSC_GL_FUNC(bufferSubData),
             JSC_GL_FUNC(clear),
             JSC_GL_FUNC(clearColor),
             JSC_GL_FUNC(compileShader),
@@ -446,15 +557,23 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_FUNC(createShader),
             JSC_GL_FUNC(createTexture),
             JSC_GL_FUNC(disable),
+            JSC_GL_FUNC(drawArrays),
             JSC_GL_FUNC(enable),
+            JSC_GL_FUNC(enableVertexAttribArray),
+            JSC_GL_FUNC(getAttribLocation),
             JSC_GL_FUNC(getProgramParameter),
             JSC_GL_FUNC(getShaderParameter),
+            JSC_GL_FUNC(getUniformLocation),
             JSC_GL_FUNC(getSupportedExtensions),
             JSC_GL_FUNC(linkProgram),
             JSC_GL_FUNC(pixelStorei),
             JSC_GL_FUNC(shaderSource),
             JSC_GL_FUNC(texImage2D),
             JSC_GL_FUNC(texParameteri),
+            JSC_GL_FUNC(uniformMatrix4fv),
+            JSC_GL_FUNC(useProgram),
+            JSC_GL_FUNC(uniformMatrix4fv),
+            JSC_GL_FUNC(vertexAttribPointer),
             JSC_GL_FUNC(viewport),
             { 0, 0, 0 }
         };
@@ -465,6 +584,7 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(ALPHA),
             JSC_GL_CONSTANT(ARRAY_BUFFER),
             JSC_GL_CONSTANT(BLEND),
+            JSC_GL_CONSTANT(BYTE),
             JSC_GL_CONSTANT(CLAMP_TO_EDGE),
             JSC_GL_CONSTANT(COLOR_BUFFER_BIT),
             JSC_GL_CONSTANT(COMPILE_STATUS),
@@ -477,6 +597,7 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(DST_COLOR),
             JSC_GL_CONSTANT(DYNAMIC_DRAW),
             JSC_GL_CONSTANT(ELEMENT_ARRAY_BUFFER),
+            JSC_GL_CONSTANT(FLOAT),
             JSC_GL_CONSTANT(FRAGMENT_SHADER),
             JSC_GL_CONSTANT(FUNC_ADD),
             JSC_GL_CONSTANT(FUNC_REVERSE_SUBTRACT),
@@ -484,6 +605,9 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(LINEAR),
             JSC_GL_CONSTANT(LINEAR_MIPMAP_LINEAR),
             JSC_GL_CONSTANT(LINEAR_MIPMAP_NEAREST),
+            JSC_GL_CONSTANT(LINES),
+            JSC_GL_CONSTANT(LINE_LOOP),
+            JSC_GL_CONSTANT(LINE_STRIP),
             JSC_GL_CONSTANT(LINK_STATUS),
             JSC_GL_CONSTANT(LUMINANCE),
             JSC_GL_CONSTANT(LUMINANCE_ALPHA),
@@ -499,10 +623,12 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(ONE_MINUS_SRC_ALPHA),
             JSC_GL_CONSTANT(ONE_MINUS_SRC_COLOR),
             JSC_GL_CONSTANT(PACK_ALIGNMENT),
+            JSC_GL_CONSTANT(POINTS),
             JSC_GL_CONSTANT(REPEAT),
             JSC_GL_CONSTANT(RGB),
             JSC_GL_CONSTANT(RGBA),
             JSC_GL_CONSTANT(SCISSOR_TEST),
+            JSC_GL_CONSTANT(SHORT),
             JSC_GL_CONSTANT(SRC_ALPHA),
             JSC_GL_CONSTANT(SRC_ALPHA_SATURATE),
             JSC_GL_CONSTANT(SRC_COLOR),
@@ -514,11 +640,16 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(TEXTURE_MIN_FILTER),
             JSC_GL_CONSTANT(TEXTURE_WRAP_S),
             JSC_GL_CONSTANT(TEXTURE_WRAP_T),
+            JSC_GL_CONSTANT(TRIANGLES),
+            JSC_GL_CONSTANT(TRIANGLE_FAN),
+            JSC_GL_CONSTANT(TRIANGLE_STRIP),
             JSC_GL_CONSTANT(UNPACK_ALIGNMENT),
             JSC_GL_CONSTANT(UNPACK_COLORSPACE_CONVERSION_WEBGL),
             JSC_GL_CONSTANT(UNPACK_FLIP_Y_WEBGL),
             JSC_GL_CONSTANT(UNPACK_PREMULTIPLY_ALPHA_WEBGL),
             JSC_GL_CONSTANT(UNSIGNED_BYTE),
+            JSC_GL_CONSTANT(UNSIGNED_BYTE),
+            JSC_GL_CONSTANT(UNSIGNED_SHORT),
             JSC_GL_CONSTANT(UNSIGNED_SHORT_4_4_4_4),
             JSC_GL_CONSTANT(UNSIGNED_SHORT_5_5_5_1),
             JSC_GL_CONSTANT(UNSIGNED_SHORT_5_6_5),

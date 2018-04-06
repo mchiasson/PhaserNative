@@ -55,9 +55,19 @@ int PhaserNativeApp::run(int argc, char* argv[])
 
     // register constructors. Without them, users won't be able to 'new' them
     // from javascript.
-    globalObject.setProperty("Image", Image::GetJSConstructor());
-    globalObject.setProperty("URL", URL::GetJSConstructor());
-    globalObject.setProperty("XMLHttpRequest", XMLHttpRequest::GetJSConstructor());
+    Body::RegisterClass();
+    CanvasRenderingContext2D::RegisterClass();
+    Console::RegisterClass();
+    Document::RegisterClass();
+    DocumentElement::RegisterClass();
+    HTMLCanvasElement::RegisterClass();
+    Image::RegisterClass();
+    Navigator::RegisterClass();
+    Performance::RegisterClass();
+    URL::RegisterClass();
+    WebGLRenderingContext::RegisterClass();
+    Window::RegisterClass();
+    XMLHttpRequest::RegisterClass();
 
     // install default instances to mimic a web browser
     globalObject.setProperty("console", Console::CreateJSObject({}));
@@ -68,8 +78,6 @@ int PhaserNativeApp::run(int argc, char* argv[])
 
     // evaluate phaser.js
     JSC::evaluateScriptFromFile("phaser.js");
-
-
 
     for(auto javascriptFile : javascriptFiles) {
 
@@ -96,7 +104,7 @@ void PhaserNativeApp::processEvent()
 {
     SDL_Event e;
 
-    while(SDL_PollEvent( &e ) != 0)
+    if(SDL_WaitEvent( &e ) != 0)
     {
         switch(e.type)
         {
@@ -210,7 +218,7 @@ void PhaserNativeApp::processEvent()
             else if (e.type == PhaserNativeEvent::RequestAnimationFrame)
             {
                 Window::OnRequestAnimationFrame(e.user.data1, ((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency()));
-                m_window.renderStats();
+//                m_window.renderStats();
                 m_window.swap();
             }
             else if (e.type == PhaserNativeEvent::XHR)

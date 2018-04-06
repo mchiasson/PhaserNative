@@ -14,18 +14,12 @@ JSC_CONSTRUCTOR(Window::Constructor)
     // install a few global function into the instance.
     // Not sure why it has to exist in both cases...
     JSC::Object globalObject = JSC_GLOBAL_OBJECT;
-    JSC::Value setTimeout = globalObject.getProperty("setTimeout");
-    JSC::Value clearTimeout = globalObject.getProperty("clearTimeout");
-    JSC::Value setInterval = globalObject.getProperty("setInterval");
-    JSC::Value clearInterval = globalObject.getProperty("clearInterval");
-    JSC::Value performance = globalObject.getProperty("performance");
-    JSC::Value WebGLRenderingContext = globalObject.getProperty("WebGLRenderingContext");
-    window.object.setProperty("setTimeout", setTimeout);
-    window.object.setProperty("clearTimeout", clearTimeout);
-    window.object.setProperty("setInterval", setInterval);
-    window.object.setProperty("clearInterval", clearInterval);
-    window.object.setProperty("performance", performance);
-    window.object.setProperty("WebGLRenderingContext", WebGLRenderingContext);
+    window.object.setProperty("setTimeout", globalObject.getProperty("setTimeout"));
+    window.object.setProperty("clearTimeout", globalObject.getProperty("clearTimeout"));
+    window.object.setProperty("setInterval", globalObject.getProperty("setInterval"));
+    window.object.setProperty("clearInterval", globalObject.getProperty("clearInterval"));
+    window.object.setProperty("performance", globalObject.getProperty("performance"));
+    window.object.setProperty("WebGLRenderingContext", globalObject.getProperty("WebGLRenderingContext"));
 
     return window.object;
 }
