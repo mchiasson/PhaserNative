@@ -3827,7 +3827,6 @@ var File = new Class({
  */
 File.createObjectURL = function (image, blob, defaultType)
 {
-    console.log("MATTC : typeof URL :", typeof URL);
     if (typeof URL === 'function')
     {
         image.src = URL.createObjectURL(blob);
@@ -87847,7 +87846,6 @@ var ScenePlugin = new Class({
      * [description]
      *
      * @method Phaser.Scenes.ScenePlugin#destroy
-
      * @since 3.0.0
      */
     destroy: function ()
