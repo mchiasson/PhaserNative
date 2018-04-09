@@ -1,21 +1,91 @@
 #include "CanvasRenderingContext2D.h"
 
-#include "PhaserNativeWindow.h"
 #include "ColorUtil.h"
 #include "Image.h"
+#include "HTMLCanvasElement.h"
 
-#include <PhaserGL.h>
+#include "PhaserNativeGraphics.h"
 
 JSC_CONSTRUCTOR(CanvasRenderingContext2D::Constructor) {
-    return CreateNativeInstance().object;
+
+    CanvasRenderingContext2D &canvas2d = CreateNativeInstance();
+
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(JSC::Value(argv[0]).toUnsignedInteger());
+
+    canvas2d.canvasIndex = JSC::Value(argv[0]);
+    canvas2d.context = PhaserNativeCreateGLContext(canvas.window);
+
+#ifdef NANOVG_GL3_IMPLEMENTATION
+    // hack for core profile to make things work without using VAOs: create a
+    // blank VAO and bind it.
+    glGenVertexArrays(1, &canvas2d.vao);
+    glBindVertexArray(canvas2d.vao);
+#endif
+
+    canvas2d.vg = PhaserNativeCreateNanoVGContext();
+
+    canvas2d.fontIcons = nvgCreateFont(canvas2d.vg, "icons", "entypo.ttf");
+    if (canvas2d.fontIcons == -1) {
+        *exception = JSC::Object::MakeError("Could not add font icons.");
+        return JSC::Object();
+    }
+
+    canvas2d.fontNormal = nvgCreateFont(canvas2d.vg, "sans", "Roboto-Regular.ttf");
+    if (canvas2d.fontNormal == -1) {
+        *exception = JSC::Object::MakeError("Could not add font italic.");
+        return JSC::Object();
+    }
+
+    canvas2d.fontBold = nvgCreateFont(canvas2d.vg, "sans-bold", "Roboto-Bold.ttf");
+    if (canvas2d.fontBold == -1) {
+        *exception = JSC::Object::MakeError("Could not add font bold.");
+        return JSC::Object();
+    }
+
+    canvas2d.fontEmoji = nvgCreateFont(canvas2d.vg, "emoji", "NotoEmoji-Regular.ttf");
+    if (canvas2d.fontEmoji == -1) {
+        *exception = JSC::Object::MakeError("Could not add font emoji.");
+        return JSC::Object();
+    }
+
+    nvgAddFallbackFontId(canvas2d.vg, canvas2d.fontNormal, canvas2d.fontEmoji);
+    nvgAddFallbackFontId(canvas2d.vg, canvas2d.fontBold, canvas2d.fontEmoji);
+
+    return canvas2d.object;
+
 }
 
 JSC_FINALIZER(CanvasRenderingContext2D::Finalizer) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
 
+#ifdef NANOVG_GL3_IMPLEMENTATION
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &canvas2d.vao);
+    canvas2d.vao = 0;
+#endif
+
+    PhaserNativeDestroyNanoVGContext(canvas2d.vg);
+    canvas2d.vg = nullptr;
+    canvas2d.fontIcons = 0;
+    canvas2d.fontNormal = 0;
+    canvas2d.fontBold = 0;
+    canvas2d.fontEmoji = 0;
+
+    if (SDL_GL_MakeCurrent(nullptr, nullptr) != 0) {SDL_LogCritical(0,  "%s: SDL_GL_MakeCurrent(nullptr, nullptr) failed: %s\n", __func__, SDL_GetError());}
+    SDL_GL_DeleteContext(canvas2d.context);
+
+    canvas2d.context = nullptr;
+    canvas2d.canvasIndex = 0;
     FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
 
     JSC::Value x = argv[0];
     JSC::Value y = argv[1];
@@ -24,15 +94,38 @@ JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
 
     CanvasRenderingContext2D &instance = GetNativeInstance(object);
 
-    nvgBeginPath(PhaserNativeWindow::vg);
-    nvgRect(PhaserNativeWindow::vg, x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat());
-    nvgFillColor(PhaserNativeWindow::vg, ColorUtil::stringToColor(instance.m_fillStyle.toString().getUTF8String()));
-    nvgFill(PhaserNativeWindow::vg);
+    nvgBeginPath(canvas2d.vg);
+    nvgRect(canvas2d.vg, x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat());
+    nvgFillColor(canvas2d.vg, ColorUtil::stringToColor(instance.m_fillStyle.toString().getUTF8String()));
+    nvgFill(canvas2d.vg);
+
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(CanvasRenderingContext2D::clearRect) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
+
+    JSC::Value x = argv[0];
+    JSC::Value y = argv[1];
+    JSC::Value w = argv[2];
+    JSC::Value h = argv[3];
+
+    nvgBeginPath(canvas2d.vg);
+    nvgRect(canvas2d.vg, x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat());
+    nvgFillColor(canvas2d.vg, {{{.0f, .0f, .0f, .0f}}});
+    nvgFill(canvas2d.vg);
 
     return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::createImageData) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
 
     JSC::Value sw = argv[0];
     JSC::Value sh = argv[1];
@@ -49,6 +142,10 @@ JSC_FUNCTION(CanvasRenderingContext2D::createImageData) {
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
 
     JSC::Value sx = argv[0];
     JSC::Value sy = argv[1];
@@ -71,8 +168,12 @@ JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
     return imageData;
 }
 
-JSC_FUNCTION(CanvasRenderingContext2D::putImageData)
-{
+JSC_FUNCTION(CanvasRenderingContext2D::putImageData) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
+
     JSC::Object imageData = JSC::Value(argv[0]).toObject();
 
     JSC::Value dx = argv[1];
@@ -83,21 +184,25 @@ JSC_FUNCTION(CanvasRenderingContext2D::putImageData)
     float height = imageData.getProperty("height").toFloat();
     void* pixels = data.getTypedArrayBytesPtr();
 
-    int image = nvgCreateImageMem(PhaserNativeWindow::vg, 0, (unsigned char*)pixels, (width * height * 4));
+    int image = nvgCreateImageMem(canvas2d.vg, 0, (unsigned char*)pixels, (width * height * 4));
 
-    NVGpaint imgPaint = nvgImagePattern(PhaserNativeWindow::vg, 0, 0, width, height, 0.0f, image, 1.0f);
-    nvgBeginPath(PhaserNativeWindow::vg);
-    nvgRect(PhaserNativeWindow::vg, dx.toFloat(), dy.toFloat(), width, height);
-    nvgFillPaint(PhaserNativeWindow::vg, imgPaint);
-    nvgFill(PhaserNativeWindow::vg);
+    NVGpaint imgPaint = nvgImagePattern(canvas2d.vg, 0, 0, width, height, 0.0f, image, 1.0f);
+    nvgBeginPath(canvas2d.vg);
+    nvgRect(canvas2d.vg, dx.toFloat(), dy.toFloat(), width, height);
+    nvgFillPaint(canvas2d.vg, imgPaint);
+    nvgFill(canvas2d.vg);
 
-    nvgDeleteImage(PhaserNativeWindow::vg, image);
+    nvgDeleteImage(canvas2d.vg, image);
 
 
     return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::drawImage) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
 
     Image &image = Image::GetNativeInstance(JSC::Value(argv[0]).toObject());
 
@@ -139,9 +244,9 @@ JSC_FUNCTION(CanvasRenderingContext2D::drawImage) {
 
     int imgWidth = image.object.getProperty("width").toInteger();
     int imgHeight = image.object.getProperty("height").toInteger();
-    int img = nvgCreateImageMem(PhaserNativeWindow::vg, 0, (unsigned char*)image.m_pixels, (imgWidth * imgHeight * 4));
+    int img = nvgCreateImageMem(canvas2d.vg, 0, (unsigned char*)image.m_pixels, (imgWidth * imgHeight * 4));
 
-    NVGpaint imgPaint = nvgImagePattern(PhaserNativeWindow::vg,
+    NVGpaint imgPaint = nvgImagePattern(canvas2d.vg,
                                         sx.toFloat(),
                                         sy.toFloat(),
                                         sWidth.toFloat(),
@@ -150,20 +255,25 @@ JSC_FUNCTION(CanvasRenderingContext2D::drawImage) {
                                         img,
                                         1.0f);
 
-    nvgBeginPath(PhaserNativeWindow::vg);
-    nvgRect(PhaserNativeWindow::vg, dx.toFloat(), dy.toFloat(), dWidth.toFloat(), dHeight.toFloat());
-    nvgFillPaint(PhaserNativeWindow::vg, imgPaint);
-    nvgFill(PhaserNativeWindow::vg);
+    nvgBeginPath(canvas2d.vg);
+    nvgRect(canvas2d.vg, dx.toFloat(), dy.toFloat(), dWidth.toFloat(), dHeight.toFloat());
+    nvgFillPaint(canvas2d.vg, imgPaint);
+    nvgFill(canvas2d.vg);
 
-    nvgDeleteImage(PhaserNativeWindow::vg, img);
+    nvgDeleteImage(canvas2d.vg, img);
 
     return JSC::Value::MakeUndefined();
 
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::measureText) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
+
     float bounds[4];
-    nvgTextBounds(PhaserNativeWindow::vg, 0, 0, JSC::Value(argv[0]).toString().getUTF8String().c_str(), nullptr, bounds);
+    nvgTextBounds(canvas2d.vg, 0, 0, JSC::Value(argv[0]).toString().getUTF8String().c_str(), nullptr, bounds);
 
     JSC::Object textMetric = JSC::Object::MakeDefault();
     textMetric.setProperty("width", JSC::Value(bounds[2] - bounds[0]));
@@ -171,50 +281,68 @@ JSC_FUNCTION(CanvasRenderingContext2D::measureText) {
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::fillText) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
 
     std::string text = JSC::Value(argv[0]).toString().getUTF8String();
     JSC::Value x = argv[1];
     JSC::Value y = argv[2];
+
+    nvgFillColor(canvas2d.vg, ColorUtil::stringToColor(canvas2d.m_fillStyle.toString().getUTF8String()));
+    nvgText(canvas2d.vg, x.toFloat(), y.toFloat(), text.c_str(), nullptr);
+
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(CanvasRenderingContext2D::save) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
 
-    nvgFillColor(PhaserNativeWindow::vg, ColorUtil::stringToColor(canvas2d.m_fillStyle.toString().getUTF8String()));
-    nvgText(PhaserNativeWindow::vg, x.toFloat(), y.toFloat(), text.c_str(), nullptr);
 
+    nvgSave(canvas2d.vg);
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(CanvasRenderingContext2D::save)
-{
-    nvgSave(PhaserNativeWindow::vg);
+JSC_FUNCTION(CanvasRenderingContext2D::restore) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+
+
+    nvgRestore(canvas2d.vg);
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(CanvasRenderingContext2D::restore)
-{
-    nvgRestore(PhaserNativeWindow::vg);
-    return JSC::Value::MakeUndefined();
-}
+JSC_FUNCTION(CanvasRenderingContext2D::translate) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
 
-JSC_FUNCTION(CanvasRenderingContext2D::translate)
-{
+
     JSC::Value x = argv[0];
     JSC::Value y = argv[1];
 
-    nvgTranslate(PhaserNativeWindow::vg, x.toFloat(), y.toFloat());
+    nvgTranslate(canvas2d.vg, x.toFloat(), y.toFloat());
     return JSC::Value::MakeUndefined();
 }
 
-JSC_PROPERTY_GET(CanvasRenderingContext2D::getFillStyle)
-{
+JSC_PROPERTY_GET(CanvasRenderingContext2D::getFillStyle) {
     return GetNativeInstance(object).m_fillStyle;
 }
 
-JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle)
-{
+JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle) {
     GetNativeInstance(object).m_fillStyle = value;
     return true;
 }
 
+JSC_PROPERTY_GET(CanvasRenderingContext2D::getCanvas) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    return canvas.object;
+}
 
 JSC::Class &CanvasRenderingContext2D::GetClassRef()
 {
@@ -222,6 +350,7 @@ JSC::Class &CanvasRenderingContext2D::GetClassRef()
     {
         static JSStaticFunction staticFunctions[] = {
             { "fillRect", CanvasRenderingContext2D::fillRect, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "clearRect", CanvasRenderingContext2D::clearRect, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "createImageData", CanvasRenderingContext2D::createImageData, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "getImageData", CanvasRenderingContext2D::getImageData, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "putImageData", CanvasRenderingContext2D::putImageData, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
@@ -236,6 +365,7 @@ JSC::Class &CanvasRenderingContext2D::GetClassRef()
 
         static JSStaticValue staticValues[] = {
             { "fillStyle", CanvasRenderingContext2D::getFillStyle, CanvasRenderingContext2D::setFillStyle, kJSPropertyAttributeDontDelete },
+            { "canvas", CanvasRenderingContext2D::getCanvas, 0, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { 0, 0, 0, 0 }
         };
 

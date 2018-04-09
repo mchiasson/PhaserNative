@@ -87,7 +87,7 @@ public:
         size_t index = 1; // 0 is reserved.
         bool found = false;
         for (index = 1; index < _pool.size(); ++index) {
-            if (!_pool[index]._inUse) {
+            if (!_pool[index].index) {
                 found = true;
                 break;
             }
@@ -95,7 +95,7 @@ public:
         if (!found) {
             _pool.resize(index+1);
         }
-        _pool[index]._inUse = true;
+        _pool[index].index = index;
         return index;
     }
 
@@ -108,7 +108,7 @@ public:
 
     static void FreeNativeInstance(JSC::Object object) {
         size_t index = object.getPrivate<size_t>();
-        _pool[index]._inUse = false;
+        _pool[index].index = 0;
         _pool[index].object = nullptr;
     }
 
@@ -130,12 +130,13 @@ public:
 
     JSC::Object object;
 
+    size_t index = 0;
+
 protected:
 
     static Class _class;
 
 private:
-    bool _inUse = false;
     static std::vector<C> _pool;
 
 };

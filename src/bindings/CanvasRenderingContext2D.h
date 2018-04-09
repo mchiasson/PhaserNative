@@ -1,6 +1,8 @@
 #pragma once
 
 #include <JSC/JSCHelpers.h>
+#include <SDL2/SDL.h>
+#include <nanovg/nanovg.h>
 
 class CanvasRenderingContext2D : public JSC::Binding<CanvasRenderingContext2D>
 {
@@ -13,6 +15,7 @@ public:
 
     static JSC_FUNCTION(fillRect);
 
+    static JSC_FUNCTION(clearRect);
     static JSC_FUNCTION(createImageData);
     static JSC_FUNCTION(getImageData);
     static JSC_FUNCTION(putImageData);
@@ -29,8 +32,18 @@ public:
     static JSC_PROPERTY_GET(getFillStyle);
     static JSC_PROPERTY_SET(setFillStyle);
 
-private:
+    static JSC_PROPERTY_GET(getCanvas);
 
     JSC::Value m_fillStyle;
+
+    SDL_GLContext context = nullptr;
+    uint32_t vao = 0;
+    size_t canvasIndex = 0;
+
+    NVGcontext *vg;
+    int fontIcons = 0;
+    int fontNormal = 0;
+    int fontBold = 0;
+    int fontEmoji = 0;
 
 };

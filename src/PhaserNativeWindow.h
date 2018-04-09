@@ -15,19 +15,20 @@ public:
     PhaserNativeWindow();
     ~PhaserNativeWindow();
 
+    void startGPUProfiling();
+    void stopGPUProfiling();
     void renderStats();
     void swap();
 
     static SDL_Window *window;
     static SDL_GLContext context;
+    static SDL_GLContext debugContext;
     static NVGcontext* vg;
 
 private:
 
-    GPUtimer gpuTimer = {};
     PhaserNativeFPSPerfGraph fps;
     PhaserNativeMSPerfGraph cpuGraph;
-    PhaserNativeMSPerfGraph gpuGraph;
     PhaserNativeMemPerfGraph cpuMemGraph;
     PhaserNativeMemPerfGraph gpuMemGraph;
 

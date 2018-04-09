@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Toolchains/Desktop-cxx11-c99.cmake" CACHE FILEPATH "Path to the default toolchain to use that forces C++11 and c99 standards")
+    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Toolchains/Desktop-cxx14-c11.cmake" CACHE FILEPATH "Path to the default toolchain to use that forces C++14 and c11 standards")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
@@ -14,7 +14,7 @@ HunterGate(
 
 project(PhaserNative)
 
-find_package(JavaScriptCore REQUIRED)
+add_subdirectory(3rdparty)
 
 hunter_add_package(SDL2)
 find_package(SDL2 CONFIG REQUIRED)
@@ -32,6 +32,8 @@ add_executable(${PROJECT_NAME}
     src/PhaserNativeApp.h
     src/PhaserNativeEvent.cpp
     src/PhaserNativeEvent.h
+    src/PhaserNativeGraphics.cpp
+    src/PhaserNativeGraphics.h
     src/PhaserNativePerfGraph.cpp
     src/PhaserNativePerfGraph.h
     src/PhaserNativeWindow.h
@@ -98,11 +100,10 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     src/
-    ${JavaScriptCore_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${JavaScriptCore_LIBRARIES}
+    JavaScriptCore
     SDL2::SDL2
     Boost::boost
 )

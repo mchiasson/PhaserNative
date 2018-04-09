@@ -128,6 +128,47 @@ Value Value::MakeFromJSONString(const std::string& json) {
     return result;
 }
 
+bool Value::isUndefined() const {
+    return JSValueIsUndefined(JSC_GLOBAL_CTX, m_value);
+}
+
+bool Value::isNull() const {
+    return JSValueIsNull(JSC_GLOBAL_CTX, m_value);
+}
+
+bool Value::isBoolean() const {
+    return JSValueIsBoolean(JSC_GLOBAL_CTX, m_value);
+}
+
+bool Value::isNumber() const {
+    return JSValueIsNumber(JSC_GLOBAL_CTX, m_value);
+}
+
+bool Value::isString() const {
+    return JSValueIsString(JSC_GLOBAL_CTX, m_value);
+}
+
+bool Value::isObject() const {
+    return JSValueIsObject(JSC_GLOBAL_CTX, m_value);
+}
+
+bool Value::isObjectOfClass(JSClassRef jsClass) const {
+    return JSValueIsObjectOfClass(JSC_GLOBAL_CTX, m_value, jsClass);
+}
+
+bool Value::isArray() const {
+    return JSValueIsArray(JSC_GLOBAL_CTX, m_value);
+}
+
+bool Value::isDate() const {
+    return JSValueIsDate(JSC_GLOBAL_CTX, m_value);
+}
+
+JSTypedArrayType Value::GetTypedArrayType() const
+{
+    return JSValueGetTypedArrayType(JSC_GLOBAL_CTX, m_value, nullptr);
+}
+
 bool Value::toBoolean() const
 {
     return JSValueToBoolean(JSC_GLOBAL_CTX, m_value);

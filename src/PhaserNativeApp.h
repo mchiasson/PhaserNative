@@ -26,7 +26,7 @@ private:
 
     void processEvent();
 
-    PhaserNativeWindow m_window;
+    //PhaserNativeWindow m_window;
 
     std::vector<const char *> javascriptFiles;
     bool m_running = false;

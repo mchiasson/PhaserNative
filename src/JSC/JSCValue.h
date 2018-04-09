@@ -64,12 +64,16 @@ public:
     operator JSValueRef() const;
 
     JSType getType() const;
-    bool isUndefined() const { return getType() == kJSTypeUndefined; }
-    bool isNull() const      { return getType() == kJSTypeNull; }
-    bool isBoolean() const   { return getType() == kJSTypeBoolean; }
-    bool isNumber() const    { return getType() == kJSTypeNumber; }
-    bool isString() const    { return getType() == kJSTypeString; }
-    bool isObject() const    { return getType() == kJSTypeObject; }
+    bool isUndefined() const;
+    bool isNull() const;
+    bool isBoolean() const;
+    bool isNumber() const;
+    bool isString() const;
+    bool isObject() const;
+    bool isObjectOfClass(JSClassRef jsClass) const;
+    bool isArray() const;
+    bool isDate() const;
+    JSTypedArrayType GetTypedArrayType() const;
 
     bool toBoolean() const;
     float toFloat() const;

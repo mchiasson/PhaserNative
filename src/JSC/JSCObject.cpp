@@ -142,12 +142,17 @@ Object::~Object()
     }
 }
 
+Object& Object::operator=(const Object& other)
+{
+    m_obj = other.m_obj;
+    return *this;
+
+}
+
 Object& Object::operator=(Object&& other)
 {
-    m_obj         = other.m_obj;
-
+    m_obj = other.m_obj;
     other.m_obj = nullptr;
-
     return *this;
 }
 

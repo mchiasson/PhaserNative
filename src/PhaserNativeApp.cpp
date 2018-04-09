@@ -19,6 +19,16 @@
 
 PhaserNativeApp::PhaserNativeApp()
 {
+#ifndef NDEBUG
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_VERBOSE);
+#endif
+
+    int rc = 0;
+    if((rc = SDL_Init( SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER)) < 0 )
+    {
+        throw JSC::Exception(SDL_GetError());
+    }
+
     PhaserNativeEvent::Timeout = SDL_RegisterEvents(1);
     PhaserNativeEvent::ImageDecoded = SDL_RegisterEvents(1);
     PhaserNativeEvent::RequestAnimationFrame = SDL_RegisterEvents(1);
@@ -218,8 +228,8 @@ void PhaserNativeApp::processEvent()
             else if (e.type == PhaserNativeEvent::RequestAnimationFrame)
             {
                 Window::OnRequestAnimationFrame(e.user.data1, ((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency() * 1000.0));
-//                m_window.renderStats();
-                m_window.swap();
+                //m_window.renderStats();
+                SDL_GL_SwapWindow(SDL_GL_GetCurrentWindow());
             }
             else if (e.type == PhaserNativeEvent::XHR)
             {

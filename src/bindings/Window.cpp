@@ -132,10 +132,8 @@ JSC::Class &Window::GetClassRef()
     if (!_class)
     {
         static JSStaticValue staticValues[] = {
-
             {"pageXOffset", JSC_CONSTANT(0)},
             {"pageYOffset", JSC_CONSTANT(0)},
-
             {0, 0, 0, 0}
         };
 

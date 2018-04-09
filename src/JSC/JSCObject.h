@@ -38,6 +38,7 @@ public:
     Object(Object&& other);
     ~Object();
 
+    Object& operator=(const Object& other);
     Object& operator=(Object&& other);
     bool operator==(const Object &other);
     bool operator!=(const Object &other);

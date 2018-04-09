@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JSC/JSCHelpers.h>
+#include <SDL2/SDL.h>
 
 class WebGLRenderingContext : public JSC::Binding<WebGLRenderingContext>
 {
@@ -36,6 +37,7 @@ public:
     static JSC_FUNCTION(getUniformLocation);
     static JSC_FUNCTION(linkProgram);
     static JSC_FUNCTION(pixelStorei);
+    static JSC_FUNCTION(scissor);
     static JSC_FUNCTION(shaderSource);
     static JSC_FUNCTION(texImage2D);
     static JSC_FUNCTION(texParameteri);
@@ -43,6 +45,15 @@ public:
     static JSC_FUNCTION(useProgram);
     static JSC_FUNCTION(vertexAttribPointer);
     static JSC_FUNCTION(viewport);
+
+    static JSC_PROPERTY_GET(getDrawingBufferWidth);
+    static JSC_PROPERTY_GET(getDrawingBufferHeight);
+
+    static JSC_PROPERTY_GET(getCanvas);
+
+    SDL_GLContext context = nullptr;
+    uint32_t vao = 0;
+    size_t canvasIndex = 0;
 
 };
 

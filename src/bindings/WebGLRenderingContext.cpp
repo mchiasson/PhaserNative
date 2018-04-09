@@ -1,25 +1,55 @@
 #include "WebGLRenderingContext.h"
-#include "PhaserGL.h"
 #include "Image.h"
+#include "HTMLCanvasElement.h"
 
 #include <cstring>
 
-#include <SDL2/SDL_log.h>
+#include "PhaserNativeGraphics.h"
 
 JSC_CONSTRUCTOR(WebGLRenderingContext::Constructor) {
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    WebGLRenderingContext &gl = CreateNativeInstance();
 
-    return CreateNativeInstance().object;
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(JSC::Value(argv[0]).toUnsignedInteger());
+
+    gl.canvasIndex = JSC::Value(argv[0]);
+    gl.context = PhaserNativeCreateGLContext(canvas.window);
+
+#ifdef NANOVG_GL3_IMPLEMENTATION
+    // hack for core profile to make things work without using VAOs: create a
+    // blank VAO and bind it.
+    glGenVertexArrays(1, &gl.vao);
+    glBindVertexArray(gl.vao);
+#endif
+
+    return gl.object;
 }
 
 JSC_FINALIZER(WebGLRenderingContext::Finalizer) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
+#ifdef NANOVG_GL3_IMPLEMENTATION
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &gl.vao);
+    gl.vao = 0;
+#endif
+
+    SDL_GL_MakeCurrent(nullptr, nullptr);
+    SDL_GL_DeleteContext(gl.context);
+
+    gl.context = nullptr;
+    gl.canvasIndex = 0;
+
     FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::attachShader) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value program = argv[0];
     JSC::Value shader = argv[1];
 
@@ -30,6 +60,10 @@ JSC_FUNCTION(WebGLRenderingContext::attachShader) {
 
 
 JSC_FUNCTION(WebGLRenderingContext::bindBuffer) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value target = argv[0];
     JSC::Value buffer = argv[1];
 
@@ -46,6 +80,10 @@ JSC_FUNCTION(WebGLRenderingContext::bindBuffer) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::bindTexture) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value target = argv[0];
     JSC::Value texture = argv[1];
 
@@ -62,6 +100,9 @@ JSC_FUNCTION(WebGLRenderingContext::bindTexture) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::blendEquation) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     JSC::Value mode = argv[0];
 
@@ -78,6 +119,9 @@ JSC_FUNCTION(WebGLRenderingContext::blendEquation) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::blendFunc) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     JSC::Value sfactor = argv[0];
     JSC::Value dfactor = argv[1];
@@ -101,6 +145,9 @@ JSC_FUNCTION(WebGLRenderingContext::blendFunc) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::bufferData) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     JSC::Value target     = argv[0];
     JSC::Value dataOrSize = argv[1];
@@ -140,6 +187,9 @@ JSC_FUNCTION(WebGLRenderingContext::bufferData) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::bufferSubData) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     JSC::Value target  = argv[0];
     JSC::Value offset  = argv[1];
@@ -160,14 +210,21 @@ JSC_FUNCTION(WebGLRenderingContext::bufferSubData) {
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(WebGLRenderingContext::clear)
-{
+JSC_FUNCTION(WebGLRenderingContext::clear) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value mask = argv[0];
     glClear(mask);
     return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(WebGLRenderingContext::clearColor) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value r = argv[0];
     JSC::Value g = argv[0];
     JSC::Value b = argv[0];
@@ -178,26 +235,39 @@ JSC_FUNCTION(WebGLRenderingContext::clearColor) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::compileShader) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value shader = argv[0];
     phaserGLCheckErrorDebug( glCompileShader(shader) );
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(WebGLRenderingContext::createBuffer)
-{
+JSC_FUNCTION(WebGLRenderingContext::createBuffer) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     GLuint buffer;
     phaserGLCheckErrorDebug( glGenBuffers(1, &buffer) );
     return JSC::Value(buffer);
 }
 
-JSC_FUNCTION(WebGLRenderingContext::createProgram)
-{
+JSC_FUNCTION(WebGLRenderingContext::createProgram) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     auto program = phaserGLCheckErrorDebug( glCreateProgram() );
     return JSC::Value(program);
 }
 
-JSC_FUNCTION(WebGLRenderingContext::createShader)
-{
+JSC_FUNCTION(WebGLRenderingContext::createShader) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value type = argv[0];
 
 #ifndef NDEBUG
@@ -214,12 +284,20 @@ JSC_FUNCTION(WebGLRenderingContext::createShader)
 }
 
 JSC_FUNCTION(WebGLRenderingContext::createTexture) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     GLuint texture;
     phaserGLCheckErrorDebug( glGenTextures(1, &texture) );
     return JSC::Value(texture);
 }
 
 JSC_FUNCTION(WebGLRenderingContext::disable) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value cap = argv[0];
 
 #ifndef NDEBUG
@@ -234,8 +312,11 @@ JSC_FUNCTION(WebGLRenderingContext::disable) {
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(WebGLRenderingContext::drawArrays)
-{
+JSC_FUNCTION(WebGLRenderingContext::drawArrays) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value mode = argv[0];
     JSC::Value first = argv[1];
     JSC::Value count = argv[2];
@@ -245,6 +326,9 @@ JSC_FUNCTION(WebGLRenderingContext::drawArrays)
 }
 
 JSC_FUNCTION(WebGLRenderingContext::enable) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     JSC::Value cap = argv[0];
 
@@ -261,12 +345,20 @@ JSC_FUNCTION(WebGLRenderingContext::enable) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::enableVertexAttribArray) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value index = argv[0];
     phaserGLCheckErrorDebug( glEnableVertexAttribArray(index) );
     return JSC::Value::MakeUndefined();
 }
 
 JSC_FUNCTION(WebGLRenderingContext::getAttribLocation) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value program = argv[0];
     JSC::Value name = argv[1];
 
@@ -275,6 +367,10 @@ JSC_FUNCTION(WebGLRenderingContext::getAttribLocation) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::getProgramParameter) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value shader = argv[0];
     JSC::Value pname = argv[1];
 
@@ -293,6 +389,10 @@ JSC_FUNCTION(WebGLRenderingContext::getProgramParameter) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::getShaderParameter) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value shader = argv[0];
     JSC::Value pname = argv[1];
 
@@ -311,6 +411,9 @@ JSC_FUNCTION(WebGLRenderingContext::getShaderParameter) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::getUniformLocation) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     JSC::Value program = argv[0];
     JSC::Value name = argv[1];
@@ -319,6 +422,9 @@ JSC_FUNCTION(WebGLRenderingContext::getUniformLocation) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::getSupportedExtensions) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     std::vector<JSValueRef> extensions;
 
@@ -346,13 +452,33 @@ JSC_FUNCTION(WebGLRenderingContext::getSupportedExtensions) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::linkProgram) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value program = argv[0];
     phaserGLCheckErrorDebug( glLinkProgram(program) );
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(WebGLRenderingContext::shaderSource)
-{
+JSC_FUNCTION(WebGLRenderingContext::scissor) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
+    JSC::Value x = argv[0];
+    JSC::Value y = argv[1];
+    JSC::Value w = argv[2];
+    JSC::Value h = argv[3];
+    glScissor(x, y, w, h);
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(WebGLRenderingContext::shaderSource) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value shader = argv[0];
     std::string source = JSC::Value(argv[1]).toString().getUTF8String();
 
@@ -365,6 +491,10 @@ JSC_FUNCTION(WebGLRenderingContext::shaderSource)
 }
 
 JSC_FUNCTION(WebGLRenderingContext::pixelStorei) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value pnameVal = argv[0];
     JSC::Value param = argv[1];
 
@@ -394,6 +524,10 @@ JSC_FUNCTION(WebGLRenderingContext::pixelStorei) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::texImage2D) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value target = argv[0];
     JSC::Value level = argv[1];
     JSC::Value internalformat = argv[2];
@@ -452,6 +586,10 @@ JSC_FUNCTION(WebGLRenderingContext::texImage2D) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::texParameteri) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value target = argv[0];
     JSC::Value pname = argv[1];
     JSC::Value param = argv[2];
@@ -480,15 +618,21 @@ JSC_FUNCTION(WebGLRenderingContext::texParameteri) {
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(WebGLRenderingContext::useProgram)
-{
+JSC_FUNCTION(WebGLRenderingContext::useProgram) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value program = argv[0];
     phaserGLCheckErrorDebug( glUseProgram(program) );
     return JSC::Value::MakeUndefined();
 }
 
-JSC_FUNCTION(WebGLRenderingContext::uniformMatrix4fv)
-{
+JSC_FUNCTION(WebGLRenderingContext::uniformMatrix4fv) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value location = argv[0];
     JSC::Value transpose = argv[1];
     JSC::Value value = argv[2];
@@ -498,6 +642,9 @@ JSC_FUNCTION(WebGLRenderingContext::uniformMatrix4fv)
 }
 
 JSC_FUNCTION(WebGLRenderingContext::vertexAttribPointer) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
 
     JSC::Value indexVal = argv[0];
     JSC::Value sizeVal = argv[1];
@@ -526,6 +673,10 @@ JSC_FUNCTION(WebGLRenderingContext::vertexAttribPointer) {
 }
 
 JSC_FUNCTION(WebGLRenderingContext::viewport) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    SDL_GL_MakeCurrent(canvas.window, gl.context);
+
     JSC::Value x      = argv[0];
     JSC::Value y      = argv[1];
     JSC::Value width  = argv[2];
@@ -533,6 +684,26 @@ JSC_FUNCTION(WebGLRenderingContext::viewport) {
     phaserGLCheckErrorDebug( glViewport(x, y, width, height) );
     return JSC::Value::MakeUndefined();
 }
+
+JSC_PROPERTY_GET(WebGLRenderingContext::getDrawingBufferWidth) {
+    int w, h;
+    SDL_GL_GetDrawableSize(SDL_GL_GetCurrentWindow(), &w, &h);
+    return JSC::Value(w);
+}
+
+
+JSC_PROPERTY_GET(WebGLRenderingContext::getDrawingBufferHeight) {
+    int w, h;
+    SDL_GL_GetDrawableSize(SDL_GL_GetCurrentWindow(), &w, &h);
+    return JSC::Value(h);
+}
+
+JSC_PROPERTY_GET(WebGLRenderingContext::getCanvas) {
+    WebGLRenderingContext &gl = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(gl.canvasIndex);
+    return canvas.object;
+}
+
 
 JSC::Class &WebGLRenderingContext::GetClassRef()
 {
@@ -567,6 +738,7 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_FUNC(getSupportedExtensions),
             JSC_GL_FUNC(linkProgram),
             JSC_GL_FUNC(pixelStorei),
+            JSC_GL_FUNC(scissor),
             JSC_GL_FUNC(shaderSource),
             JSC_GL_FUNC(texImage2D),
             JSC_GL_FUNC(texParameteri),
@@ -655,6 +827,11 @@ JSC::Class &WebGLRenderingContext::GetClassRef()
             JSC_GL_CONSTANT(UNSIGNED_SHORT_5_6_5),
             JSC_GL_CONSTANT(VERTEX_SHADER),
             JSC_GL_CONSTANT(ZERO),
+
+            { "drawingBufferWidth", WebGLRenderingContext::getDrawingBufferWidth, nullptr, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "drawingBufferHeight", WebGLRenderingContext::getDrawingBufferHeight, nullptr, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "canvas", WebGLRenderingContext::getCanvas, 0, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+
             { 0, 0, 0, 0 }
         };
 
