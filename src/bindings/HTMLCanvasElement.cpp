@@ -4,6 +4,7 @@
 #include "PhaserNativeEvent.h"
 #include "PhaserNativeGraphics.h"
 
+#include <algorithm>
 #include <sstream>
 
 JSC_CONSTRUCTOR(HTMLCanvasElement::Constructor) {
@@ -73,9 +74,19 @@ JSC_FUNCTION(HTMLCanvasElement::addEventListener)
     JSC::Object listener = JSC::Value(argv[1]).toObject();
 
     std::string typeStr = type.toString().getUTF8String();
-    SDL_Log("Registering listener for '%s'", typeStr.c_str());
-    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[typeStr];
-    listeners.insert(listener);
+
+    if (typeStr == "keydown") { PhaserNativeEvent::keyDownListeners.push_back(listener); }
+    else if (typeStr == "keyup") { PhaserNativeEvent::keyUpListeners.push_back(listener); }
+    else if (typeStr == "mousemove") { PhaserNativeEvent::mouseMoveListeners.push_back(listener); }
+    else if (typeStr == "mousedown") { PhaserNativeEvent::mouseDownListeners.push_back(listener); }
+    else if (typeStr == "mouseup") { PhaserNativeEvent::mouseUpListeners.push_back(listener); }
+    else if (typeStr == "touchstart") { PhaserNativeEvent::touchStartListeners.push_back(listener); }
+    else if (typeStr == "touchmove") { PhaserNativeEvent::touchMoveListeners.push_back(listener); }
+    else if (typeStr == "touchend") { PhaserNativeEvent::touchEndListeners.push_back(listener); }
+    else {
+        SDL_LogWarn(0, "Unsupported '%s' event type. Contact a Developer!\n", typeStr.c_str());
+    }
+
     return JSC::Value::MakeUndefined();
 }
 
@@ -85,13 +96,30 @@ JSC_FUNCTION(HTMLCanvasElement::removeEventListener)
     JSC::Object listener = JSC::Value(argv[1]).toObject();
 
     std::string typeStr = type.toString().getUTF8String();
-    SDL_Log("Unregistering listener for '%s'", typeStr.c_str());
-    std::set<JSC::Object> &listeners = PhaserNativeEvent::eventListeners[typeStr];
-    auto it = listeners.find(listener);
-    if (it != listeners.end())
-    {
-        listeners.erase(it);
+    std::vector<JSC::Object> *listeners = nullptr;
+
+    if (typeStr == "keydown") { listeners = &PhaserNativeEvent::keyDownListeners; }
+    else if (typeStr == "keyup") { listeners = &PhaserNativeEvent::keyUpListeners; }
+    else if (typeStr == "mousemove") { listeners = &PhaserNativeEvent::mouseMoveListeners; }
+    else if (typeStr == "mousedown") { listeners = &PhaserNativeEvent::mouseDownListeners; }
+    else if (typeStr == "mouseup") { listeners = &PhaserNativeEvent::mouseUpListeners; }
+    else if (typeStr == "touchstart") { listeners = &PhaserNativeEvent::touchStartListeners; }
+    else if (typeStr == "touchmove") { listeners = &PhaserNativeEvent::touchMoveListeners; }
+    else if (typeStr == "touchend") { listeners = &PhaserNativeEvent::touchEndListeners; }
+    else {
+        SDL_LogWarn(0, "Unsupported '%s' event type. Contact a Developer!\n", typeStr.c_str());
     }
+
+
+    if (listeners)
+    {
+        auto it = std::find(listeners->begin(), listeners->end(), listener);
+        if (it != listeners->end())
+        {
+            listeners->erase(it);
+        }
+    }
+
     return JSC::Value::MakeUndefined();
 }
 

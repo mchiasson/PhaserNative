@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <SDL2/SDL_gamecontroller.h>
-#include <PhaserNativeWindow.h>
+#include <PhaserNativeDebugRenderer.h>
 
 class PhaserNativeApp
 {
@@ -26,8 +26,7 @@ private:
 
     void processEvent();
 
-    //PhaserNativeWindow m_window;
-
+    PhaserNativeDebugRenderer m_debugRenderer;
     std::vector<const char *> javascriptFiles;
     bool m_running = false;
     std::vector<GameDevice> m_gameDevices;

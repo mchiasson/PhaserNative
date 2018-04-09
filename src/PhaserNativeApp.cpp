@@ -1,6 +1,7 @@
 #include "PhaserNativeApp.h"
 #include "PhaserNativeEvent.h"
-#include "PhaserNativeWindow.h"
+#include "PhaserNativeGraphics.h"
+#include "PhaserNativeDebugRenderer.h"
 
 // DOM/HTML5 object subs/wrappers/implementations
 #include "bindings/Body.h"
@@ -119,8 +120,78 @@ void PhaserNativeApp::processEvent()
         switch(e.type)
         {
         case SDL_KEYUP:
+            if (PhaserNativeEvent::keyUpListeners.size() > 0)
+            {
+                bool altKey = (e.key.keysym.mod & (KMOD_LALT | KMOD_RALT)) > 0;
+                bool ctrlKey = (e.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL)) > 0;
+                bool metaKey = (e.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI)) > 0;
+                bool shiftKey = (e.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT)) > 0;
+                int location = 0;
+                if (e.key.keysym.mod & (KMOD_LALT | KMOD_LCTRL | KMOD_LGUI | KMOD_LSHIFT))
+                {
+                    location = 1; // left;
+                }
+                else if (e.key.keysym.mod & (KMOD_RALT | KMOD_RCTRL | KMOD_RGUI | KMOD_RSHIFT))
+                {
+                    location = 2; // right;
+                }
+                bool repeat = e.key.repeat > 0;
+
+                SDL_Keycode key = e.key.keysym.sym;
+                SDL_Scancode code = e.key.keysym.scancode;
+
+                JSC::Object keyboardEvent = JSC::Object::MakeDefault();
+                keyboardEvent.setProperty("altKey", altKey);
+                keyboardEvent.setProperty("code", code);
+                keyboardEvent.setProperty("ctrlKey", ctrlKey);
+                keyboardEvent.setProperty("key", key);
+                keyboardEvent.setProperty("location", location);
+                keyboardEvent.setProperty("metaKey", metaKey);
+                keyboardEvent.setProperty("repeat", repeat);
+                keyboardEvent.setProperty("shiftKey", shiftKey);
+
+                for (size_t i = 0; i < PhaserNativeEvent::keyUpListeners.size(); ++i)
+                {
+                    PhaserNativeEvent::keyUpListeners[i].callAsFunction({keyboardEvent});
+                }
+            }
             break;
         case SDL_KEYDOWN:
+            if (PhaserNativeEvent::keyDownListeners.size() > 0)
+            {
+                bool altKey = (e.key.keysym.mod & (KMOD_LALT | KMOD_RALT)) > 0;
+                bool ctrlKey = (e.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL)) > 0;
+                bool metaKey = (e.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI)) > 0;
+                bool shiftKey = (e.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT)) > 0;
+                int location = 0;
+                if (e.key.keysym.mod & (KMOD_LALT | KMOD_LCTRL | KMOD_LGUI | KMOD_LSHIFT))
+                {
+                    location = 1; // left;
+                }
+                else if (e.key.keysym.mod & (KMOD_RALT | KMOD_RCTRL | KMOD_RGUI | KMOD_RSHIFT))
+                {
+                    location = 2; // right;
+                }
+                bool repeat = e.key.repeat > 0;
+
+                SDL_Keycode key = e.key.keysym.sym;
+                SDL_Scancode code = e.key.keysym.scancode;
+
+                JSC::Object keyboardEvent = JSC::Object::MakeDefault();
+                keyboardEvent.setProperty("altKey", altKey);
+                keyboardEvent.setProperty("code", code);
+                keyboardEvent.setProperty("ctrlKey", ctrlKey);
+                keyboardEvent.setProperty("key", key);
+                keyboardEvent.setProperty("location", location);
+                keyboardEvent.setProperty("metaKey", metaKey);
+                keyboardEvent.setProperty("repeat", repeat);
+                keyboardEvent.setProperty("shiftKey", shiftKey);
+
+                for (size_t i = 0; i < PhaserNativeEvent::keyUpListeners.size(); ++i)
+                {
+                    PhaserNativeEvent::keyDownListeners[i].callAsFunction({keyboardEvent});
+                }
+            }
             break;
         case SDL_MOUSEBUTTONUP:
             break;
@@ -227,9 +298,20 @@ void PhaserNativeApp::processEvent()
             }
             else if (e.type == PhaserNativeEvent::RequestAnimationFrame)
             {
+                PhaserNativeBeginFrame();
+                m_debugRenderer.startProfiling();
                 Window::OnRequestAnimationFrame(e.user.data1, ((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency() * 1000.0));
-                //m_window.renderStats();
-                SDL_GL_SwapWindow(SDL_GL_GetCurrentWindow());
+                m_debugRenderer.stopProfiling();
+                m_debugRenderer.renderStats();
+                PhaserNativeEndFrame();
+
+                SDL_Window *window = SDL_GL_GetCurrentWindow();
+
+                if (window)
+                {
+                    SDL_GL_SwapWindow(window);
+                }
+
             }
             else if (e.type == PhaserNativeEvent::XHR)
             {

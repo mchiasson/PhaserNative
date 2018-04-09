@@ -18,7 +18,15 @@ struct PhaserNativeEvent
     static uint32_t RequestAnimationFrame;
     static uint32_t XHR;
 
-    static std::unordered_map<std::string, std::set<JSC::Object> > eventListeners;
+    static std::vector<JSC::Object> keyDownListeners;
+    static std::vector<JSC::Object> keyUpListeners;
+    static std::vector<JSC::Object> mouseMoveListeners;
+    static std::vector<JSC::Object> mouseDownListeners;
+    static std::vector<JSC::Object> mouseUpListeners;
+    static std::vector<JSC::Object> touchStartListeners;
+    static std::vector<JSC::Object> touchMoveListeners;
+    static std::vector<JSC::Object> touchEndListeners;
+
 };
 
 #endif // PHASERNATIVEEVENT_H

@@ -4337,13 +4337,14 @@ var CanvasPool = function ()
     {
         if (canvasType === undefined) { canvasType = CONST.CANVAS; }
 
-        for (var i = 0, len = pool.length; i < len; i++) {
+        for (var i = 0, len = pool.length; i < len; i++)
+        {
             var container = pool[i];
             if (!container.parent && container.type === canvasType)
             {
                 return container;
             }
-        };
+        }
 
         return null;
     };
@@ -79176,7 +79177,7 @@ var WebGLRenderer = new Class({
 
         for (var i = 0; i <= 16; i++)
         {
-            this.blendModes.push({ func: [ gl.ONE, gl.ONE_MINUS_SRC_ALPHA ], equation: gl.FUNC_ADD });
+            this.blendModes.push({ func: [ gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA ], equation: gl.FUNC_ADD });
         }
 
         this.blendModes[1].func = [ gl.ONE, gl.DST_ALPHA ];

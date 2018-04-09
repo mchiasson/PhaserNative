@@ -30,14 +30,14 @@ add_executable(${PROJECT_NAME}
     src/PhaserGL.h
     src/PhaserNativeApp.cpp
     src/PhaserNativeApp.h
+    src/PhaserNativeDebugRenderer.h
+    src/PhaserNativeDebugRenderer.cpp
     src/PhaserNativeEvent.cpp
     src/PhaserNativeEvent.h
     src/PhaserNativeGraphics.cpp
     src/PhaserNativeGraphics.h
     src/PhaserNativePerfGraph.cpp
     src/PhaserNativePerfGraph.h
-    src/PhaserNativeWindow.h
-    src/PhaserNativeWindow.cpp
 
     ### Javascript Bindings
     src/bindings/Body.cpp

@@ -58,7 +58,7 @@ JSC_CONSTRUCTOR(CanvasRenderingContext2D::Constructor) {
 JSC_FINALIZER(CanvasRenderingContext2D::Finalizer) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 #ifdef NANOVG_GL3_IMPLEMENTATION
     glBindVertexArray(0);
@@ -73,19 +73,17 @@ JSC_FINALIZER(CanvasRenderingContext2D::Finalizer) {
     canvas2d.fontBold = 0;
     canvas2d.fontEmoji = 0;
 
-    if (SDL_GL_MakeCurrent(nullptr, nullptr) != 0) {SDL_LogCritical(0,  "%s: SDL_GL_MakeCurrent(nullptr, nullptr) failed: %s\n", __func__, SDL_GetError());}
-    SDL_GL_DeleteContext(canvas2d.context);
-
+    PhaserNativeDestroyGLContext(canvas2d.context);
     canvas2d.context = nullptr;
     canvas2d.canvasIndex = 0;
+
     FreeNativeInstance(object);
 }
 
 JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
-
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
     JSC::Value x = argv[0];
     JSC::Value y = argv[1];
@@ -105,7 +103,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::fillRect) {
 JSC_FUNCTION(CanvasRenderingContext2D::clearRect) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     JSC::Value x = argv[0];
@@ -124,7 +122,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::clearRect) {
 JSC_FUNCTION(CanvasRenderingContext2D::createImageData) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     JSC::Value sw = argv[0];
@@ -144,7 +142,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::createImageData) {
 JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     JSC::Value sx = argv[0];
@@ -171,7 +169,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::getImageData) {
 JSC_FUNCTION(CanvasRenderingContext2D::putImageData) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     JSC::Object imageData = JSC::Value(argv[0]).toObject();
@@ -201,7 +199,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::putImageData) {
 JSC_FUNCTION(CanvasRenderingContext2D::drawImage) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     Image &image = Image::GetNativeInstance(JSC::Value(argv[0]).toObject());
@@ -269,7 +267,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::drawImage) {
 JSC_FUNCTION(CanvasRenderingContext2D::measureText) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     float bounds[4];
@@ -283,7 +281,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::measureText) {
 JSC_FUNCTION(CanvasRenderingContext2D::fillText) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     std::string text = JSC::Value(argv[0]).toString().getUTF8String();
@@ -299,7 +297,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::fillText) {
 JSC_FUNCTION(CanvasRenderingContext2D::save) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     nvgSave(canvas2d.vg);
@@ -309,7 +307,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::save) {
 JSC_FUNCTION(CanvasRenderingContext2D::restore) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     nvgRestore(canvas2d.vg);
@@ -319,7 +317,7 @@ JSC_FUNCTION(CanvasRenderingContext2D::restore) {
 JSC_FUNCTION(CanvasRenderingContext2D::translate) {
     CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
-    if (SDL_GL_MakeCurrent(canvas.window, canvas2d.context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
 
     JSC::Value x = argv[0];

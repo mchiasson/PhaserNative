@@ -78,7 +78,7 @@ JSC_PROPERTY_SET(Image::setSrc)
                  std::string base64Data = src.substr(base64pngMarker.length());
                  std::string data = decode64(base64Data);
 
-                 imageData->pixels = stbi_load_from_memory((stbi_uc*)data.c_str(), data.size(), &imageData->width, &imageData->height, &imageData->channels, 4);
+                 imageData->pixels = stbi_load_from_memory((stbi_uc*)data.c_str(), data.size(), &imageData->width, &imageData->height, &imageData->channels, STBI_rgb_alpha);
              }
              else
              {
@@ -91,7 +91,7 @@ JSC_PROPERTY_SET(Image::setSrc)
                      return;
                  }
 
-                 imageData->pixels = stbi_load_from_file(imageFile, &imageData->width, &imageData->height, &imageData->channels, 4);
+                 imageData->pixels = stbi_load_from_file(imageFile, &imageData->width, &imageData->height, &imageData->channels, STBI_rgb_alpha);
                  fclose(imageFile);
              }
          }
@@ -103,7 +103,7 @@ JSC_PROPERTY_SET(Image::setSrc)
 
              stbi_uc *buffer = (stbi_uc *)arrayBuffer.getArrayBufferBytesPtr();
              int size = arrayBuffer.getArrayBufferByteLength();
-             imageData->pixels = stbi_load_from_memory(buffer, size, &imageData->width, &imageData->height, &imageData->channels, 4);
+             imageData->pixels = stbi_load_from_memory(buffer, size, &imageData->width, &imageData->height, &imageData->channels, STBI_rgb_alpha);
          }
          else
          {

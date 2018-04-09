@@ -45,7 +45,7 @@ public: PhaserNativeMemPerfGraph(const char *title) : PhaserNativePerfGraph(titl
 };
 
 struct GPUtimer {
-    int supported;
+    bool supported;
     int cur, ret;
     unsigned int queries[GPU_QUERY_COUNT];
 };

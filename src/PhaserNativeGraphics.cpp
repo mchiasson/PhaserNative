@@ -6,6 +6,8 @@
 
 #include <thread>
 
+static NVGcontext *_current_vg = nullptr;
+
 SDL_Window* PhaserNativeCreateWindow()
 {
     SDL_Window *window = nullptr;
@@ -47,21 +49,12 @@ SDL_Window* PhaserNativeCreateWindow()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    for (int i = 0; window == nullptr && i < 3; ++i)
-    {
-        SDL_Log("SDL_CreateWindow attempt #%d\n", i+1);
-        window = SDL_CreateWindow(nullptr,
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  0,
-                                  0,
-                                  flags);
-
-        if (window == nullptr)
-        {
-            SDL_LogError(0, "SDL_CreateWindow attempt #%d failed : %s\n", i+1, SDL_GetError());
-        }
-    }
+    window = SDL_CreateWindow("PhaserNative",
+                              SDL_WINDOWPOS_UNDEFINED,
+                              SDL_WINDOWPOS_UNDEFINED,
+                              0,
+                              0,
+                              flags);
 
 
     if (window == nullptr)
@@ -104,9 +97,15 @@ void PhaserNativeDestroyGLContext(SDL_GLContext context)
     SDL_GL_DeleteContext(context);
 }
 
+void PhaserNativeMakeCurrent(SDL_Window *window, SDL_GLContext context, NVGcontext *vg)
+{
+    if (SDL_GL_MakeCurrent(window, context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    _current_vg = vg;
+}
+
 NVGcontext* PhaserNativeCreateNanoVGContext()
 {
-    NVGcontext *ctx = nullptr;
+    NVGcontext *vg = nullptr;
 
     int nvg_flags = 0;
 
@@ -121,28 +120,62 @@ NVGcontext* PhaserNativeCreateNanoVGContext()
 #endif
 
 #ifdef NANOVG_GL2_IMPLEMENTATION
-    ctx = nvgCreateGL2(nvg_flags);
+    vg = nvgCreateGL2(nvg_flags);
 #elif defined(NANOVG_GL3_IMPLEMENTATION)
-    ctx = nvgCreateGL3(nvg_flags);
+    vg = nvgCreateGL3(nvg_flags);
 #elif defined(NANOVG_GLES2_IMPLEMENTATION)
-    ctx = nvgCreateGLES2(nvg_flags);
+    vg = nvgCreateGLES2(nvg_flags);
 #elif defined(NANOVG_GLES3_IMPLEMENTATION)
-    ctx = nvgCreateGLES3(nvg_flags);
+    vg = nvgCreateGLES3(nvg_flags);
 #endif
 
+    _current_vg = vg;
 
-    return ctx;
+    return vg;
 }
 
-void PhaserNativeDestroyNanoVGContext(NVGcontext *ctx)
+
+void PhaserNativeDestroyNanoVGContext(NVGcontext *vg)
 {
+    if (_current_vg == vg)
+    {
+        _current_vg = nullptr;
+    }
+
 #ifdef NANOVG_GL2_IMPLEMENTATION
-    nvgDeleteGL2(ctx);
+    nvgDeleteGL2(vg);
 #elif defined(NANOVG_GL3_IMPLEMENTATION)
-    nvgDeleteGL3(ctx);
+    nvgDeleteGL3(vg);
 #elif defined(NANOVG_GLES2_IMPLEMENTATION)
-    nvgDeleteGLES2(ctx);
+    nvgDeleteGLES2(vg);
 #elif defined(NANOVG_GLES3_IMPLEMENTATION)
-    nvgDeleteGLES3(ctx);
+    nvgDeleteGLES3(vg);
 #endif
+}
+
+NVGcontext *PhaserNativeGetCurrentNanoVG()
+{
+    return _current_vg;
+}
+
+void PhaserNativeBeginFrame()
+{
+    if (_current_vg)
+    {
+        int width, height;
+        SDL_GetWindowSize(SDL_GL_GetCurrentWindow(), &width, &height);
+
+        int fbWidth, fbHeight;
+        SDL_GL_GetDrawableSize(SDL_GL_GetCurrentWindow(), &fbWidth, &fbHeight);
+
+        nvgBeginFrame(_current_vg, width, height,  fbWidth / (float) width);
+    }
+}
+
+void PhaserNativeEndFrame()
+{
+    if (_current_vg)
+    {
+        nvgEndFrame(_current_vg);
+    }
 }

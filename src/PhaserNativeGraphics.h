@@ -16,5 +16,12 @@ void PhaserNativeDestroyWindow(SDL_Window *window);
 SDL_GLContext PhaserNativeCreateGLContext(SDL_Window* window);
 void PhaserNativeDestroyGLContext(SDL_GLContext context);
 
+void PhaserNativeMakeCurrent(SDL_Window *window, SDL_GLContext context, NVGcontext *vg);
+
 NVGcontext* PhaserNativeCreateNanoVGContext();
-void PhaserNativeDestroyNanoVGContext(NVGcontext *ctx);
+void PhaserNativeDestroyNanoVGContext(NVGcontext *vg);
+
+NVGcontext *PhaserNativeGetCurrentNanoVG();
+
+void PhaserNativeBeginFrame();
+void PhaserNativeEndFrame();
