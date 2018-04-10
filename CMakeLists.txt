@@ -56,6 +56,8 @@ add_executable(${PROJECT_NAME}
     src/bindings/HTMLCanvasElement.h
     src/bindings/Image.cpp
     src/bindings/Image.h
+    src/bindings/KeyboardEvent.cpp
+    src/bindings/KeyboardEvent.h
     src/bindings/Navigator.cpp
     src/bindings/Navigator.h
     src/bindings/Performance.cpp

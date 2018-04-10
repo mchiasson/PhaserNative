@@ -123,7 +123,7 @@ public:
     static size_t GetNativeInstanceCount() {
         size_t count = 0;
         for (size_t index = 1; index < _pool.size(); ++index) {
-            if (_pool[index]._inUse) { ++count; }
+            if (_pool[index].index > 0) { ++count; }
         }
         return count;
     }

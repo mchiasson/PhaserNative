@@ -11,12 +11,14 @@
 #include "bindings/DocumentElement.h"
 #include "bindings/HTMLCanvasElement.h"
 #include "bindings/Image.h"
+#include "bindings/KeyboardEvent.h"
 #include "bindings/Navigator.h"
 #include "bindings/Performance.h"
 #include "bindings/URL.h"
 #include "bindings/WebGLRenderingContext.h"
 #include "bindings/Window.h"
 #include "bindings/XMLHttpRequest.h"
+
 
 PhaserNativeApp::PhaserNativeApp()
 {
@@ -73,6 +75,7 @@ int PhaserNativeApp::run(int argc, char* argv[])
     DocumentElement::RegisterClass();
     HTMLCanvasElement::RegisterClass();
     Image::RegisterClass();
+    KeyboardEvent::RegisterClass();
     Navigator::RegisterClass();
     Performance::RegisterClass();
     URL::RegisterClass();
@@ -86,6 +89,8 @@ int PhaserNativeApp::run(int argc, char* argv[])
     globalObject.setProperty("navigator", Navigator::CreateJSObject({}));
     globalObject.setProperty("performance", Performance::CreateJSObject({}));
     globalObject.setProperty("window", Window::CreateJSObject({}));
+\
+    globalObject.setProperty("_keyboardEvent", KeyboardEvent::CreateJSObject({}), kJSPropertyAttributeDontEnum);
 
     // evaluate phaser.js
     JSC::evaluateScriptFromFile("phaser.js");
@@ -122,74 +127,23 @@ void PhaserNativeApp::processEvent()
         case SDL_KEYUP:
             if (PhaserNativeEvent::keyUpListeners.size() > 0)
             {
-                bool altKey = (e.key.keysym.mod & (KMOD_LALT | KMOD_RALT)) > 0;
-                bool ctrlKey = (e.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL)) > 0;
-                bool metaKey = (e.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI)) > 0;
-                bool shiftKey = (e.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT)) > 0;
-                int location = 0;
-                if (e.key.keysym.mod & (KMOD_LALT | KMOD_LCTRL | KMOD_LGUI | KMOD_LSHIFT))
-                {
-                    location = 1; // left;
-                }
-                else if (e.key.keysym.mod & (KMOD_RALT | KMOD_RCTRL | KMOD_RGUI | KMOD_RSHIFT))
-                {
-                    location = 2; // right;
-                }
-                bool repeat = e.key.repeat > 0;
-
-                SDL_Keycode key = e.key.keysym.sym;
-                SDL_Scancode code = e.key.keysym.scancode;
-
-                JSC::Object keyboardEvent = JSC::Object::MakeDefault();
-                keyboardEvent.setProperty("altKey", altKey);
-                keyboardEvent.setProperty("code", code);
-                keyboardEvent.setProperty("ctrlKey", ctrlKey);
-                keyboardEvent.setProperty("key", key);
-                keyboardEvent.setProperty("location", location);
-                keyboardEvent.setProperty("metaKey", metaKey);
-                keyboardEvent.setProperty("repeat", repeat);
-                keyboardEvent.setProperty("shiftKey", shiftKey);
-
+                JSC::Object keyEv = JSC_GLOBAL_OBJECT.getProperty("_keyboardEvent").toObject();
+                KeyboardEvent::GetNativeInstance(keyEv).configure(e);
                 for (size_t i = 0; i < PhaserNativeEvent::keyUpListeners.size(); ++i)
                 {
-                    PhaserNativeEvent::keyUpListeners[i].callAsFunction({keyboardEvent});
+                    PhaserNativeEvent::keyUpListeners[i].callAsFunction({keyEv});
                 }
             }
             break;
         case SDL_KEYDOWN:
             if (PhaserNativeEvent::keyDownListeners.size() > 0)
             {
-                bool altKey = (e.key.keysym.mod & (KMOD_LALT | KMOD_RALT)) > 0;
-                bool ctrlKey = (e.key.keysym.mod & (KMOD_LCTRL | KMOD_RCTRL)) > 0;
-                bool metaKey = (e.key.keysym.mod & (KMOD_LGUI | KMOD_RGUI)) > 0;
-                bool shiftKey = (e.key.keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT)) > 0;
-                int location = 0;
-                if (e.key.keysym.mod & (KMOD_LALT | KMOD_LCTRL | KMOD_LGUI | KMOD_LSHIFT))
-                {
-                    location = 1; // left;
-                }
-                else if (e.key.keysym.mod & (KMOD_RALT | KMOD_RCTRL | KMOD_RGUI | KMOD_RSHIFT))
-                {
-                    location = 2; // right;
-                }
-                bool repeat = e.key.repeat > 0;
-
-                SDL_Keycode key = e.key.keysym.sym;
-                SDL_Scancode code = e.key.keysym.scancode;
-
-                JSC::Object keyboardEvent = JSC::Object::MakeDefault();
-                keyboardEvent.setProperty("altKey", altKey);
-                keyboardEvent.setProperty("code", code);
-                keyboardEvent.setProperty("ctrlKey", ctrlKey);
-                keyboardEvent.setProperty("key", key);
-                keyboardEvent.setProperty("location", location);
-                keyboardEvent.setProperty("metaKey", metaKey);
-                keyboardEvent.setProperty("repeat", repeat);
-                keyboardEvent.setProperty("shiftKey", shiftKey);
+                JSC::Object keyEv = JSC_GLOBAL_OBJECT.getProperty("_keyboardEvent").toObject();
+                KeyboardEvent::GetNativeInstance(keyEv).configure(e);
 
                 for (size_t i = 0; i < PhaserNativeEvent::keyUpListeners.size(); ++i)
                 {
-                    PhaserNativeEvent::keyDownListeners[i].callAsFunction({keyboardEvent});
+                    PhaserNativeEvent::keyDownListeners[i].callAsFunction({keyEv});
                 }
             }
             break;
