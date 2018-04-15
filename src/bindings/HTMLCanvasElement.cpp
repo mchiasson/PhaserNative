@@ -44,6 +44,7 @@ JSC_FUNCTION(HTMLCanvasElement::getContext) {
             context = CanvasRenderingContext2D::GetNativeInstance(canvas.canvas2dIndex).object;
         }
 
+#if 0
     } else if (elementName == "webgl" || "experimental-webgl") {
 
         if (canvas.glIndex == 0)
@@ -56,6 +57,7 @@ JSC_FUNCTION(HTMLCanvasElement::getContext) {
         {
             context = WebGLRenderingContext::GetNativeInstance(canvas.glIndex).object;
         }
+#endif
 
     } else {
 

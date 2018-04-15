@@ -288,6 +288,9 @@ JSC_FUNCTION(CanvasRenderingContext2D::fillText) {
     JSC::Value x = argv[1];
     JSC::Value y = argv[2];
 
+    nvgFontSize(canvas2d.vg, 24.0f);
+    nvgFontFace(canvas2d.vg, "sans");
+    nvgTextAlign(canvas2d.vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
     nvgFillColor(canvas2d.vg, ColorUtil::stringToColor(canvas2d.m_fillStyle.toString().getUTF8String()));
     nvgText(canvas2d.vg, x.toFloat(), y.toFloat(), text.c_str(), nullptr);
 
@@ -319,11 +322,52 @@ JSC_FUNCTION(CanvasRenderingContext2D::translate) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-
     JSC::Value x = argv[0];
     JSC::Value y = argv[1];
 
     nvgTranslate(canvas2d.vg, x.toFloat(), y.toFloat());
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(CanvasRenderingContext2D::rotate) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    JSC::Value angle = argv[0];
+
+    nvgRotate(canvas2d.vg, angle.toFloat());
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(CanvasRenderingContext2D::scale) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    JSC::Value x = argv[0];
+    JSC::Value y = argv[1];
+
+    nvgScale(canvas2d.vg, x.toFloat(), y.toFloat());
+
+    return JSC::Value::MakeUndefined();
+}
+
+JSC_FUNCTION(CanvasRenderingContext2D::setTransform)
+{
+
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    JSC::Value a = argv[0];
+    JSC::Value b = argv[1];
+    JSC::Value c = argv[2];
+    JSC::Value d = argv[3];
+    JSC::Value e = argv[4];
+    JSC::Value f = argv[5];
+
+    nvgTransform(canvas2d.vg, a.toFloat(), b.toFloat(), c.toFloat(), d.toFloat(), e.toFloat(), f.toFloat());
     return JSC::Value::MakeUndefined();
 }
 
@@ -358,6 +402,9 @@ JSC::Class &CanvasRenderingContext2D::GetClassRef()
             { "save", CanvasRenderingContext2D::save, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "restore", CanvasRenderingContext2D::restore, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { "translate", CanvasRenderingContext2D::translate, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "rotate", CanvasRenderingContext2D::rotate, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "scale", CanvasRenderingContext2D::scale, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
+            { "setTransform", CanvasRenderingContext2D::setTransform, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
             { 0, 0, 0 }
         };
 

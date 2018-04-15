@@ -28,6 +28,9 @@ public:
     static JSC_FUNCTION(restore);
 
     static JSC_FUNCTION(translate);
+    static JSC_FUNCTION(rotate);
+    static JSC_FUNCTION(scale);
+    static JSC_FUNCTION(setTransform);
 
     static JSC_PROPERTY_GET(getFillStyle);
     static JSC_PROPERTY_SET(setFillStyle);

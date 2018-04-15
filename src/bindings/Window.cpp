@@ -21,7 +21,8 @@ JSC_CONSTRUCTOR(Window::Constructor)
     window.object.setProperty("setInterval", globalObject.getProperty("setInterval"));
     window.object.setProperty("clearInterval", globalObject.getProperty("clearInterval"));
     window.object.setProperty("performance", globalObject.getProperty("performance"));
-    window.object.setProperty("WebGLRenderingContext", globalObject.getProperty("WebGLRenderingContext"));
+    //window.object.setProperty("WebGLRenderingContext", globalObject.getProperty("WebGLRenderingContext"));
+    window.object.setProperty("CanvasRenderingContext2D", globalObject.getProperty("CanvasRenderingContext2D"));
 
     return window.object;
 }
