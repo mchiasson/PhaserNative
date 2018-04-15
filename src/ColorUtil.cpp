@@ -167,20 +167,39 @@ NVGcolor ColorUtil::stringToColor(const std::string &color)
     const std::string rgb = "rgb";
     const std::string rgba = "rgba";
 
-    if(color[0] == '#' && color.length() >= 7)
+    if(color[0] == '#')
     {
         std::string r = "0x";
         std::string g = "0x";
         std::string b = "0x";
         std::string a = "0x";
 
-        r += color[1] + color[2];
-        g += color[3] + color[4];
-        b += color[5] + color[6];
-        if (color.length() >= 7) {
-            a += color[7] + color[8];
-        } else {
+        switch(color.length())
+        {
+        case 4: // example: #RGB
+            r += color[1];
+            g += color[2];
+            b += color[3];
+            a += "f";
+            break;
+        case 5: // example: #RGBA
+            r += color[1];
+            g += color[2];
+            b += color[3];
+            a += color[4];
+            break;
+        case 7: // example: #RRGGBB
+            r += color[1] + color[2];
+            g += color[3] + color[4];
+            b += color[5] + color[6];
             a += "ff";
+            break;
+        case 9: // example: #RRGGBBAA
+            r += color[1] + color[2];
+            g += color[3] + color[4];
+            b += color[5] + color[6];
+            a += color[7] + color[8];
+            break;
         }
 
         std::stringstream ss;
@@ -200,14 +219,54 @@ NVGcolor ColorUtil::stringToColor(const std::string &color)
         ss >> result.a;
         ss.clear();
 
-        result.r /= 255.0f;
-        result.g /= 255.0f;
-        result.b /= 255.0f;
-        result.a /= 255.0f;
+        switch(color.length())
+        {
+        case 4: // example: #RGB
+        case 5: // example: #RGBA
+            result.r /= 15.0f;
+            result.g /= 15.0f;
+            result.b /= 15.0f;
+            result.a /= 15.0f;
+            break;
+        case 7: // example: #RRGGBB
+        case 9: // example: #RRGGBBAA
+            result.r /= 255.0f;
+            result.g /= 255.0f;
+            result.b /= 255.0f;
+            result.a /= 255.0f;
+            break;
+        }
+
     }
     else if (color.compare(0, rgb.size(), rgb) == 0 ||
              color.compare(0, rgba.size(), rgba) == 0 )
     {
+        // TODO this parsing section really sucks and should be redone because
+        // it needs to support all of these:
+        //
+        //  Functional syntax
+        // -------------------
+        // rgb(255,0,153)
+        // rgb(255, 0, 153)
+        // rgb(100%,0%,60%)
+        // rgb(100%, 0%, 60%)
+        //
+        //  Functional syntax with alpha
+        // ------------------------------
+        // rgb(255, 0, 153, 1)
+        // rgb(255, 0, 153, 100%)
+        //
+        //  Whitespace syntax
+        // -------------------
+        // rgb(255 0 153 / 1)
+        // rgb(255 0 153 / 100%)
+        //
+        //  Functional syntax with floats value
+        // -------------------------------------
+        // rgb(255, 0, 153.6, 1)
+        // rgb(1e2, .5e1, .5e0, +.25e2%)
+
+
         std::string values;
         values = color.substr((color[3] == '(' ? 4 : 5));
         values = values.substr(0, values.length()-1);
