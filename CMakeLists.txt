@@ -8,19 +8,22 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.20.14.tar.gz"
-    SHA1 "18cdbf5c47abdda437c73bf5437b7c3c65afe47c"
+    URL "https://github.com/ruslo/hunter/archive/v0.20.40.tar.gz"
+    SHA1 "a500979296b4b6b1542a2881151ceb9c984f3e36"
 )
 
 project(PhaserNative)
 
-add_subdirectory(3rdparty)
-
 hunter_add_package(SDL2)
 find_package(SDL2 CONFIG REQUIRED)
 
+hunter_add_package(ICU)
+find_package(ICU CONFIG REQUIRED)
+
 hunter_add_package(Boost)
 find_package(Boost CONFIG REQUIRED)
+
+add_subdirectory(3rdparty)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
