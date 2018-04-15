@@ -83,7 +83,7 @@ struct Type<std::unique_ptr<T>> {
         duk_pop_2(d);
 
         // get pointer to shared pointer
-        duk_get_prop_string(d, 0, "\xff" "uptr_key");
+        duk_get_prop_string(d, 0, DUK_HIDDEN_SYMBOL("uptr_key"));
         int boxKey = duk_get_int(d, -1);
         duk_pop(d);
 
@@ -104,10 +104,10 @@ struct Type<std::unique_ptr<T>> {
         auto objIdx = duk_push_object(d);
 
         duk_push_int(d, boxKey);
-        duk_put_prop_string(d, -2, "\xff" "uptr_key");
+        duk_put_prop_string(d, -2, DUK_HIDDEN_SYMBOL("uptr_key"));
 
         duk_push_pointer(d, objPtr);
-        duk_put_prop_string(d, -2, "\xff" "obj_ptr");
+        duk_put_prop_string(d, -2, DUK_HIDDEN_SYMBOL("obj_ptr"));
 
         duk_push_c_function(d, finalizer, 1);
         duk_set_finalizer(d, -2);
@@ -117,7 +117,7 @@ struct Type<std::unique_ptr<T>> {
     }
 
     static void get(duk::Context &d, std::unique_ptr<T> &value, int index) {
-        duk_get_prop_string(d, index, "\xff" "uptr_key");
+        duk_get_prop_string(d, index, DUK_HIDDEN_SYMBOL("uptr_key"));
         int key = duk_get_int(d, -1);
         duk_pop(d);
 

@@ -4,11 +4,16 @@
 #include <vector>
 
 #include <SDL2/SDL_gamecontroller.h>
-#include <PhaserNativeDebugRenderer.h>
+#include <duktape-cpp/DuktapeCpp.h>
+
+#include "PhaserNativeDebugRenderer.h"
+
 
 class PhaserNativeApp
 {
 public:
+
+    static duk::Context ctx;
 
     struct GameDevice
     {
@@ -31,7 +36,14 @@ private:
     bool m_running = false;
     std::vector<GameDevice> m_gameDevices;
 
+    int compileFile(const char * filename);
+    int compileFileHandler(FILE *f);
 
+    static duk_ret_t wrappedCompileExecute(duk_context *ctx, void *udata);
+    static duk_ret_t getStackRaw(duk_context *ctx, void *udata);
+    static int create_timer(duk_context *ctx);
+    static int delete_timer(duk_context *ctx);
+    static const char* timer_api_script;
 };
 
 #endif // PHASERNATIVEAPP_H

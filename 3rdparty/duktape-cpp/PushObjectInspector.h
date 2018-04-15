@@ -23,11 +23,23 @@ public:
     template <class C, class A>
     void property(const char *name, Getter<C, A> getter);
 
+    template <class C>
+    void property(const char *name,
+                  duk_ret_t (*getter)(duk::Context &ctx, C *obj, duk_idx_t nargs),
+                  duk_ret_t (*setter)(duk::Context &ctx, C *obj, duk_idx_t nargs));
+
+    template <class C>
+    void property(const char *name,
+                  duk_ret_t (*getter)(duk::Context &ctx, C *obj, duk_idx_t nargs));
+
     template <class C, class R, class ... A>
     void method(const char *name, R(C::*method)(A...));
 
     template <class C, class R, class ... A>
     void method(const char *name, R(C::*method)(A...) const);
+
+    template <class C>
+    void method(const char *name, duk_ret_t (*methodSelector)(duk::Context &ctx, C *obj, duk_idx_t nargs));
 
 private:
     duk::Context &_d;

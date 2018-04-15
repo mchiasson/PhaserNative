@@ -1,25 +1,44 @@
 #pragma once
 
-#include "JSC/JSCHelpers.h"
+#include "HTMLElement.h"
 
-class Image : public JSC::Binding<Image>
+struct Image : public HTMLElement
 {
-    friend class WebGLRenderingContext;
-
-public:
-
-    static JSC::Class &GetClassRef();
-
     static void OnImageDecoded(void* imageData);
 
-    static JSC_CONSTRUCTOR(Constructor);
-    static JSC_FINALIZER(Finalizer);
+    virtual ~Image() override;
 
-    static JSC_PROPERTY_GET(getSrc);
-    static JSC_PROPERTY_SET(setSrc);
+    std::string src;
+    const std::string &getSrc() const { return src; }
+    void setSrc(const std::string &src);
 
-    JSC::Value m_src;
+    bool complete = false;
+    bool getComplete() const { return complete; }
 
-    uint8_t *m_pixels = nullptr;
+    int naturalWidth = 0;
+    int getNaturalWidth() const { return naturalWidth; }
+
+    int naturalHeight = 0;
+    int getNaturalHeight() const { return naturalHeight; }
+
+    uint8_t *pixels = nullptr;
+
+    std::function<void(void)> onload;
+    const std::function<void(void)> &getOnload() const { return onload; }
+    void setOnload(const std::function<void(void)> &onload) { this->onload = onload; }
+
+    template <class Inspector>
+    static void inspect(Inspector &i) {
+        i.construct(&std::make_shared<Image>);
+        i.property("src", &Image::getSrc, &Image::setSrc);
+        i.property("complete", &Image::getComplete);
+        i.property("naturalWidth", &Image::getNaturalWidth);
+        i.property("naturalHeight", &Image::getNaturalHeight);
+        i.property("onload", &Image::getOnload, &Image::setOnload);
+    }
+
 };
+
+DUK_CPP_DEF_CLASS_NAME(Image);
+DUK_CPP_DEF_BASE_CLASS(Image, HTMLElement);
 

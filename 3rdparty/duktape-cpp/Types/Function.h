@@ -31,9 +31,16 @@ struct JSFunctionReturnVal<void> {
 
 }
 
+template <typename>
+class JSFunction;
+
 template <class R, class ... A>
-class JSFunction {
+class JSFunction<R(A...)> {
 public:
+
+    JSFunction()
+        : _d(nullptr), _refKey(0) { }
+
     JSFunction(duk_context *d, int stashIndex)
         : _d(d), _refKey(stashIndex) { }
 
@@ -86,7 +93,7 @@ public:
         return *this;
     }
 
-    R operator () (A&& ... args) const {
+    R operator () (A ... args) const {
         return call(std::forward<A>(args)...);
     }
 
@@ -106,6 +113,10 @@ public:
             throw ScriptEvaluationExcepton(std::string(duk_safe_to_string(d, -1)) + "\n" + stack);
         }
         return details::JSFunctionReturnVal<R>::get(d, 0);
+    }
+
+    bool operator==(const JSFunction &other) {
+        return _d == other._d && _refKey == other._refKey;
     }
 
 private:
@@ -155,7 +166,7 @@ struct Type<std::function<R(A...)>> {
 
     template <class RR, class ... AA>
     static void assignFunction(std::function<RR(AA...)> &val, duk_context *dukPtr, int heapIdx) {
-        JSFunction<RR, AA...> func(dukPtr, heapIdx);
+        JSFunction<RR(AA...)> func(dukPtr, heapIdx);
         auto fn = [f = std::move(func)] (AA&& ... args) -> RR {
             try {
                 return f.call(std::forward<AA>(args)...);
@@ -167,6 +178,31 @@ struct Type<std::function<R(A...)>> {
         };
         val = std::move(fn);
     }
+
+    static constexpr bool isPrimitive() { return true; };
+};
+
+template <class R, class ... A>
+struct Type<JSFunction<R(A...)> > {
+    static void push(duk::Context &, JSFunction<R(A...)> const &) {
+        assert(false && "Push JSFunction to duktape stack is not implemented");
+    }
+
+    /**
+     * Get function from stack at specified index
+     * @param[in] d pointer to duktape context
+     * @param[out] val value
+     * @param[in] index value index at duktape stack
+     */
+    static void get(duk::Context &d, JSFunction<R(A...)> &val, int funcIndex) {
+        // push function to heap stash
+        int key = d.stashRef(funcIndex);
+
+        duk_context *dukPtr = d.ptr();
+        val = JSFunction<R(A...)>(dukPtr, key);
+    }
+
+    static constexpr bool isPrimitive() { return true; };
 };
 
 }

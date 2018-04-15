@@ -30,6 +30,36 @@ inline void PushObjectInspector::property(const char *name, Getter<C, A> getter)
     );
 }
 
+template <class C>
+inline void PushObjectInspector::property(const char *name,
+                                          duk_ret_t (*getter)(duk::Context &ctx, C *obj, duk_idx_t nargs),
+                                          duk_ret_t (*setter)(duk::Context &ctx, C *obj, duk_idx_t nargs))
+{
+    duk_push_string(_d, name);
+    PushMethodVargs(_d, getter);
+    PushMethodVargs(_d, setter);
+    duk_def_prop(
+        _d,
+        _objIdx,
+        DUK_DEFPROP_HAVE_GETTER |
+        DUK_DEFPROP_HAVE_SETTER
+    );
+}
+
+template <class C>
+inline void PushObjectInspector::property(const char *name,
+                                          duk_ret_t (*getter)(duk::Context &ctx, C *obj, duk_idx_t nargs))
+{
+    duk_push_string(_d, name);
+    PushMethodVargs(_d, getter);
+    duk_def_prop(
+        _d,
+        _objIdx,
+        DUK_DEFPROP_HAVE_GETTER
+    );
+}
+
+
 template <class C, class R, class ... A>
 inline void PushObjectInspector::method(const char *name, R(C::*method)(A...)) {
     PushMethod(_d, method);
@@ -41,5 +71,12 @@ inline void PushObjectInspector::method(const char *name, R(C::*method)(A...) co
     PushMethod(_d, method);
     duk_put_prop_string(_d, _objIdx, name);
 }
+
+template <class C>
+inline void PushObjectInspector::method(const char *name, duk_ret_t (*methodSelector)(duk::Context &ctx, C *obj, duk_idx_t nargs)) {
+    PushMethodVargs(_d, methodSelector);
+    duk_put_prop_string(_d, _objIdx, name);
+}
+
 
 }}

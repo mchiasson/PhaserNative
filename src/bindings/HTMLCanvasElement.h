@@ -1,30 +1,34 @@
 #pragma once
 
-#include "JSC/JSCHelpers.h"
-#include <SDL2/SDL.h>
+#include "HTMLElement.h"
 
-class HTMLCanvasElement : public JSC::Binding<HTMLCanvasElement>
+#include "RenderingContext.h"
+
+#include <SDL2/SDL_video.h>
+
+struct HTMLCanvasElement : public HTMLElement
 {
-public:
+    HTMLCanvasElement();
+    virtual ~HTMLCanvasElement();
 
-    static JSC::Class &GetClassRef();
+    static duk_ret_t getContext(duk::Context &ctx, duk_idx_t nargs);
 
-    static JSC_CONSTRUCTOR(Constructor);
-    static JSC_FINALIZER(Finalizer);
-
-    static JSC_FUNCTION(getContext);
-    static JSC_FUNCTION(addEventListener);
-    static JSC_FUNCTION(removeEventListener);
-    static JSC_FUNCTION(getBoundingClientRect);
-
-    static JSC_PROPERTY_GET(getWidth);
-    static JSC_PROPERTY_SET(setWidth);
-    static JSC_PROPERTY_GET(getHeight);
-    static JSC_PROPERTY_SET(setHeight);
+    int getWidth() const;
+    void setWidth(int width);
+    int getHeight() const;
+    void setHeight(int height);
 
     SDL_Window *window = nullptr;
 
-    size_t canvas2dIndex = 0;
-    size_t glIndex = 0;
+    template <class Inspector>
+    static void inspect(Inspector &i) {
+        i.construct(&std::make_shared<HTMLCanvasElement>);
+        i.property("width", &HTMLCanvasElement::getWidth, &HTMLCanvasElement::setWidth);
+        i.property("height", &HTMLCanvasElement::getHeight, &HTMLCanvasElement::setHeight);
+        i.function("getContext", &HTMLCanvasElement::getContext);
+    }
+
 };
 
+DUK_CPP_DEF_CLASS_NAME(HTMLCanvasElement);
+DUK_CPP_DEF_BASE_CLASS(HTMLCanvasElement, HTMLElement);

@@ -21,6 +21,12 @@ public:
     template <class C, class A>
     void property(const char *name, Getter<C, A> getter) {}
 
+    template <class C>
+    void property(const char *name, duk_ret_t (*getter)(duk::Context &ctx, C *obj, duk_idx_t nargs), duk_ret_t (*setter)(duk::Context &ctx, C *obj, duk_idx_t nargs)) {}
+
+    template <class C>
+    void property(const char *name, duk_ret_t (*getter)(duk::Context &ctx, C *obj, duk_idx_t nargs)) {}
+
     template <class A>
     void static_property(const char *name, StaticGetter<A> getter, StaticSetter<A> setter) {}
 
@@ -33,14 +39,23 @@ public:
     template <class C, class R, class ... A>
     void method(const char *name, R(C::*method)(A...) const) {}
 
+    template <class C>
+    void method(const char *name, duk_ret_t (*methodSelector)(duk::Context &ctx, C *obj, duk_idx_t nargs)) {}
+
     template <class R, class ... A>
-    void static_method(const char *name, R(*method)(A...)) {}
+    void function(const char *name, R(*method)(A...)) {}
+
+    void function_vargs(const char *name, duk_ret_t (*methodSelector)(duk::Context &ctx, duk_idx_t nargs)) {}
 
     template <class C, class ... A>
     void construct(std::shared_ptr<C> (*constructor) (A...)) {}
 
     template <class C, class ... A>
     void construct(std::unique_ptr<C> (*constructor) (A...)) {}
+
+    template <class C>
+    void construct(std::shared_ptr<C> (*factory)(duk::Context &ctx, duk_idx_t nargs)) {}
+
 };
 
 }}

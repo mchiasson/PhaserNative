@@ -1,24 +1,18 @@
 #pragma once
 
-#include "JSC/JSCHelpers.h"
+#include <duktape-cpp/DuktapeCpp.h>
+#include <memory>
 
-class Window : public JSC::Binding<Window>
+class Window
 {
 public:
 
-    static JSC::Class &GetClassRef();
-
     static void OnRequestAnimationFrame(void* ptr, double timestamp);
 
-    static JSC_CONSTRUCTOR(Constructor);
-    static JSC_FINALIZER(Finalizer);
-
-    static JSC_FUNCTION(createTimer);
-    static JSC_FUNCTION(deleteTimer);
-
-    static JSC_FUNCTION(addEventListener);
-    static JSC_FUNCTION(removeEventListener);
-
-    static JSC_FUNCTION(requestAnimationFrame);
-
+    template <class Inspector>
+    static void inspect(Inspector &i) {
+        i.construct(&std::make_shared<Window>);
+    }
 };
+
+DUK_CPP_DEF_CLASS_NAME(Window);

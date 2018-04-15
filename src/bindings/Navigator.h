@@ -1,12 +1,21 @@
 #pragma once
 
-#include "JSC/JSCHelpers.h"
+#include <duktape-cpp/DuktapeCpp.h>
+#include <memory>
 
-class Navigator : public JSC::Binding<Navigator>
+
+class Navigator
 {
 public:
-    static JSC::Class &GetClassRef();
 
-    static JSC_CONSTRUCTOR(Constructor);
-    static JSC_FINALIZER(Finalizer);
+    const char* userAgent() const;
+
+    template <class Inspector>
+    static void inspect(Inspector &i) {
+        i.construct(&std::make_shared<Navigator>);
+        i.property("userAgent", &Navigator::userAgent);
+    }
+
 };
+
+DUK_CPP_DEF_CLASS_NAME(Navigator);

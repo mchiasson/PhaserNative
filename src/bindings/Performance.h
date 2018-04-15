@@ -1,17 +1,21 @@
 #pragma once
 
-#include "JSC/JSCHelpers.h"
+#include <duktape-cpp/DuktapeCpp.h>
+#include <memory>
 
 
-class Performance : public JSC::Binding<Performance>
+class Performance
 {
 public:
 
-    static JSC::Class &GetClassRef();
+    double now();
 
-    static JSC_CONSTRUCTOR(Constructor);
-    static JSC_FINALIZER(Finalizer);
+    template <class Inspector>
+    static void inspect(Inspector &i) {
+        i.construct(&std::make_shared<Performance>);
+        i.method("now", &Performance::now);
+    }
 
-    static JSC_FUNCTION(now);
 };
 
+DUK_CPP_DEF_CLASS_NAME(Performance);

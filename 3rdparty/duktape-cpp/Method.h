@@ -48,10 +48,10 @@ struct ArgGetter<A const &, Index, true> {
 template <class A, int Index>
 struct ArgGetter<A&, Index, false> {
     static A& get(duk::Context &d) {
-        if (!duk_has_prop_string(d, Index, "\xff" "obj_ptr")) {
+        if (!duk_has_prop_string(d, Index, DUK_HIDDEN_SYMBOL("obj_ptr"))) {
             duk_error(d, DUK_ERR_TYPE_ERROR, "Expected reference to object, but `obj_ptr` not defined");
         }
-        duk_get_prop_string(d, Index, "\xff" "obj_ptr");
+        duk_get_prop_string(d, Index, DUK_HIDDEN_SYMBOL("obj_ptr"));
         A *obj = reinterpret_cast<A*>(duk_get_pointer(d, -1));
         duk_pop(d);
         return *obj;
@@ -97,7 +97,7 @@ struct MethodDispatcher<C, void, A...> {
 
 template <class C>
 struct MethodDispatcher<C, void> {
-    duk_ret_t dispatch(std::function<void(C*)> const &func, C* obj, duk::Context &d) {
+    duk_ret_t dispatch(std::function<void(C*)> const &func, C* obj, duk::Context &) {
         func(obj);
         return 0;
     }
@@ -145,7 +145,7 @@ struct StaticMethodDispatcher<void, A...> {
 
 template <>
 struct StaticMethodDispatcher<void> {
-    duk_ret_t dispatch(std::function<void()> const &func, duk::Context &d) {
+    duk_ret_t dispatch(std::function<void()> const &func, duk::Context &) {
         func();
         return 0;
     }
@@ -157,6 +157,26 @@ struct StaticMethodDispatcher<R> {
         R res = func();
         Type<ClearType<R>>::push(d, res);
         return 1;
+    }
+};
+
+
+/**
+ * Variable argument Method dispatcher used to call native method and push result to duktape stack
+ */
+template <class C>
+struct MethodVargsDispatcher {
+    duk_ret_t dispatch(duk_ret_t (*methodSelector)(duk::Context &ctx, C *obj, duk_idx_t nargs), C* obj, duk_idx_t nargs, duk::Context &d) {
+        return methodSelector(d, obj, nargs);
+    }
+};
+
+/**
+ * Variable argument Function dispatcher used to call native static function and push result to duktape stack
+ */
+struct FunctionVargsDispatcher {
+    duk_ret_t dispatch(duk_ret_t (*functionSelector)(duk::Context &ctx, duk_idx_t nargs), duk_idx_t nargs, duk::Context &d) {
+        return functionSelector(d, nargs);
     }
 };
 
@@ -181,7 +201,7 @@ struct Method {
 
         // Add hidden pointer to method holder
         duk_push_pointer(d, mh);
-        duk_put_prop_string(d, fidx, "\xff" "method_ptr");
+        duk_put_prop_string(d, fidx, DUK_HIDDEN_SYMBOL("method_ptr"));
 
         duk_push_c_function(d, funcFinalizer, 1);
         duk_set_finalizer(d, fidx);
@@ -203,13 +223,13 @@ struct Method {
 
         // Get pointer to object
         duk_push_this(d);
-        duk_get_prop_string(d, -1, "\xff" "obj_ptr");
+        duk_get_prop_string(d, -1, DUK_HIDDEN_SYMBOL("obj_ptr"));
         C * objPtr = reinterpret_cast<C*>(duk_get_pointer(d, -1));
         duk_pop_2(d);
 
         // Get pointer to method holder
         duk_push_current_function(d);
-        duk_get_prop_string(d, -1, "\xff" "method_ptr");
+        duk_get_prop_string(d, -1, DUK_HIDDEN_SYMBOL("method_ptr"));
         MethodPointer * mh = reinterpret_cast<MethodPointer*>(duk_get_pointer(d, -1));
         duk_pop_2(d);
 
@@ -220,7 +240,7 @@ struct Method {
 
     static duk_ret_t funcFinalizer(duk_context *d) {
         // object being finalized is at index 0
-        duk_get_prop_string(d, 0, "\xff" "method_ptr");
+        duk_get_prop_string(d, 0, DUK_HIDDEN_SYMBOL("method_ptr"));
         void * methodPtr = duk_get_pointer(d, -1);
         duk_pop(d);
 
@@ -253,7 +273,7 @@ struct StaticMethod {
 
         // Add hidden pointer to method holder
         duk_push_pointer(d, mh);
-        duk_put_prop_string(d, fidx, "\xff" "method_ptr");
+        duk_put_prop_string(d, fidx, DUK_HIDDEN_SYMBOL("method_ptr"));
 
         duk_push_c_function(d, funcFinalizer, 1);
         duk_set_finalizer(d, fidx);
@@ -275,7 +295,7 @@ struct StaticMethod {
 
         // Get pointer to method holder
         duk_push_current_function(d);
-        duk_get_prop_string(d, -1, "\xff" "method_ptr");
+        duk_get_prop_string(d, -1, DUK_HIDDEN_SYMBOL("method_ptr"));
         MethodPointer * mh = reinterpret_cast<MethodPointer*>(duk_get_pointer(d, -1));
         duk_pop_2(d);
 
@@ -286,7 +306,7 @@ struct StaticMethod {
 
     static duk_ret_t funcFinalizer(duk_context *d) {
         // object being finalized is at index 0
-        duk_get_prop_string(d, 0, "\xff" "method_ptr");
+        duk_get_prop_string(d, 0, DUK_HIDDEN_SYMBOL("method_ptr"));
         void * methodPtr = duk_get_pointer(d, -1);
         duk_pop(d);
 
@@ -297,19 +317,130 @@ struct StaticMethod {
     }
 };
 
+/**
+ * Push variable-argument method into duktape stack
+ * Stores pointer to method as hidden `method_vargs_ptr` field
+ *
+ * @param duk_context pointer to duktape context
+ * @param method pointer to method
+ * @return index of function in duktape stack
+ */
+template <class C>
+struct MethodVargs {
+
+    typedef duk_ret_t (*TMethodSelector)(duk::Context &ctx, C *obj, duk_idx_t nargs);
+
+    static int pushMethod(duk::Context &d, TMethodSelector methodSelector) {
+
+        // Push function into stack
+        auto fidx = duk_push_c_function(d, func, DUK_VARARGS);
+
+        // Add hidden pointer to method holder
+        duk_push_pointer(d, (void*)methodSelector);
+        duk_put_prop_string(d, fidx, DUK_HIDDEN_SYMBOL("method_vargs_ptr"));
+
+        return fidx;
+    }
+
+    /**
+     * This function is an entry point for methods called from duktape.
+     * It gets object and method pointers, reads parameters from duktape
+     * stack and makes actual calls to methods.
+     */
+    static duk_ret_t func(duk_context *d) {
+        // Get pointer to context
+        duk_push_global_stash(d);
+        duk_get_prop_string(d, -1, "self_ptr");
+        Context * dd = reinterpret_cast<Context*>(duk_get_pointer(d, -1));
+        duk_pop_2(d);
+
+        // Get pointer to object
+        duk_push_this(d);
+        duk_get_prop_string(d, -1, DUK_HIDDEN_SYMBOL("obj_ptr"));
+        C * objPtr = reinterpret_cast<C*>(duk_get_pointer(d, -1));
+        duk_pop_2(d);
+
+        // Get pointer to method holder
+        duk_push_current_function(d);
+        duk_get_prop_string(d, -1, DUK_HIDDEN_SYMBOL("method_vargs_ptr"));
+        TMethodSelector methodSelector = reinterpret_cast<TMethodSelector>(duk_get_pointer(d, -1));
+        duk_pop_2(d);
+
+        // Get the number of arguments
+        duk_idx_t nargs = duk_get_top(d);
+
+        // Use method dispatcher to call method
+        MethodVargsDispatcher<C> m;
+        return m.dispatch(methodSelector, objPtr, nargs, *dd);
+    }
+};
+
+struct FunctionVargs {
+
+    typedef duk_ret_t (*TFunctionSelector)(duk::Context &ctx, duk_idx_t nargs);
+
+    static int pushFunction(duk::Context &d, TFunctionSelector functionSelector) {
+
+        // Push function into stack
+        auto fidx = duk_push_c_function(d, func, DUK_VARARGS);
+
+        // Add hidden pointer to method holder
+        duk_push_pointer(d, (void*)functionSelector);
+        duk_put_prop_string(d, fidx, DUK_HIDDEN_SYMBOL("func_ptr"));
+
+        return fidx;
+    }
+
+    /**
+     * This function is an entry point for methods called from duktape.
+     * It gets object and method pointers, reads parameters from duktape
+     * stack and makes actual calls to methods.
+     */
+    static duk_ret_t func(duk_context *d) {
+        // Get pointer to context
+        duk_push_global_stash(d);
+        duk_get_prop_string(d, -1, "self_ptr");
+        Context * dd = reinterpret_cast<Context*>(duk_get_pointer(d, -1));
+        duk_pop_2(d);
+
+        // Get pointer to method holder
+        duk_push_current_function(d);
+        duk_get_prop_string(d, -1, DUK_HIDDEN_SYMBOL("func_ptr"));
+        TFunctionSelector functionSelector = reinterpret_cast<TFunctionSelector>(duk_get_pointer(d, -1));
+        duk_pop_2(d);
+
+        // Get the number of arguments
+        duk_idx_t nargs = duk_get_top(d);
+
+        // Use method dispatcher to call method
+        FunctionVargsDispatcher m;
+        return m.dispatch(functionSelector, nargs, *dd);
+    }
+};
+
 template <class C, class R, class ... A>
-void PushMethod(duk::Context &d, R (C::*method)(A...)) {
+inline void PushMethod(duk::Context &d, R (C::*method)(A...)) {
     Method<C, R, A...>::pushMethod(d, method);
 }
 
 template <class C, class R, class ... A>
-void PushMethod(duk::Context &d, R (C::*method)(A...) const) {
+inline void PushMethod(duk::Context &d, R (C::*method)(A...) const) {
     Method<C, R, A...>::pushMethod(d, method);
 }
 
 template <class R, class ... A>
-void PushMethod(duk::Context &d, R (*method)(A...)) {
+inline void PushMethod(duk::Context &d, R (*method)(A...)) {
     StaticMethod<R, A...>::pushMethod(d, method);
 }
+
+template <class C>
+inline void PushMethodVargs(duk::Context &d, duk_ret_t (*methodSelector)(duk::Context &ctx, C *obj, duk_idx_t nargs)) {
+    MethodVargs<C>::pushMethod(d, methodSelector);
+}
+
+inline void PushFunctionVargs(duk::Context &d, duk_ret_t (*functionSelector)(duk::Context &ctx, duk_idx_t nargs)) {
+    FunctionVargs::pushFunction(d, functionSelector);
+}
+
 
 }}

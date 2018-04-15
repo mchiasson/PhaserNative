@@ -25,7 +25,7 @@ struct Type {
      * @param[in] d pointer to duktape context
      * @param[out] val value
      */
-    static void get(duk::Context &d, T &val, int index);
+    static void get(duk::Context &d, T &val, duk_idx_t index);
 
     /**
      * Indicates if type is primitive

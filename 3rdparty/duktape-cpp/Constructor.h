@@ -1,6 +1,7 @@
 #pragma once
 
 #include <duktape.h>
+#include <memory>
 
 namespace duk {
 
@@ -46,6 +47,25 @@ struct ConstructorUnique {
      * @param constructor pointer to constructor function
      */
     static void push(duk::Context &d, TFunc constructor);
+
+    /**
+     * Entry point for constructor calls from javascript
+     * @param d duktape context
+     */
+    static duk_ret_t func(duk_context *d);
+};
+
+template <class C>
+struct ConstructorVargs {
+
+    typedef std::shared_ptr<C> (*TFactory)(duk::Context &ctx, duk_idx_t nargs);
+
+    /**
+     * Push constructor factory to stack
+     * @param d duktape context
+     * @param factory pointer to factory function
+     */
+    static void push(duk::Context &d, TFactory factory);
 
     /**
      * Entry point for constructor calls from javascript

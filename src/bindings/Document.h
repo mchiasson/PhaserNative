@@ -1,15 +1,31 @@
 #pragma once
 
-#include "JSC/JSCHelpers.h"
+#include "Element.h"
 
-class Document :  public JSC::Binding<Document>
+struct Document : public Node
 {
-public:
 
-    static JSC::Class &GetClassRef();
+    Document() :
+        documentElement(std::make_shared<Element>())
+    {
+    }
 
-    static JSC_CONSTRUCTOR(Constructor);
-    static JSC_FINALIZER(Finalizer);
+    std::shared_ptr<Element> documentElement;
+    const std::shared_ptr<Element> &getDocumentElement() const {
+        return documentElement;
+    }
 
-    static JSC_FUNCTION(createElement);
+    static duk_ret_t createElement(duk::Context &ctx, duk_idx_t nargs);
+
+    template <class Inspector>
+    static void inspect(Inspector &i) {
+        i.construct(&std::make_shared<Document>);
+        i.constant("readyState", "ready");
+        i.property("documentElement", &Document::getDocumentElement);
+        i.function("createElement", &Document::createElement);
+    }
+
 };
+
+DUK_CPP_DEF_CLASS_NAME(Document);
+DUK_CPP_DEF_BASE_CLASS(Document, Node);

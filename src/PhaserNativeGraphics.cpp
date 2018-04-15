@@ -2,9 +2,8 @@
 
 #include "nanovg/nanovg_gl.h"
 
-#include "JSC/JSCException.h"
-
 #include <thread>
+#include <stdexcept>
 
 static NVGcontext *_current_vg = nullptr;
 
@@ -52,14 +51,14 @@ SDL_Window* PhaserNativeCreateWindow()
     window = SDL_CreateWindow("PhaserNative",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
-                              0,
-                              0,
+                              300,
+                              150,
                               flags);
 
 
     if (window == nullptr)
     {
-        throw JSC::Exception(SDL_GetError());
+        throw std::runtime_error(SDL_GetError());
     }
 
     return window;
@@ -68,7 +67,7 @@ SDL_Window* PhaserNativeCreateWindow()
 void PhaserNativeDestroyWindow(SDL_Window *window)
 {
     if (SDL_GL_MakeCurrent(nullptr, nullptr) != 0) {
-        throw JSC::Exception(SDL_GetError());
+        throw std::runtime_error(SDL_GetError());
     }
     SDL_DestroyWindow(window);
 }
@@ -77,7 +76,7 @@ SDL_GLContext PhaserNativeCreateGLContext(SDL_Window *window)
 {
     SDL_GLContext context = SDL_GL_CreateContext(window);
     if (!context) {
-        throw JSC::Exception(SDL_GetError());
+        throw std::runtime_error(SDL_GetError());
     }
 
     static bool needGlInit = true;
@@ -92,14 +91,14 @@ SDL_GLContext PhaserNativeCreateGLContext(SDL_Window *window)
 void PhaserNativeDestroyGLContext(SDL_GLContext context)
 {
     if (SDL_GL_MakeCurrent(nullptr, nullptr) != 0) {
-        throw JSC::Exception(SDL_GetError());
+        throw std::runtime_error(SDL_GetError());
     }
     SDL_GL_DeleteContext(context);
 }
 
 void PhaserNativeMakeCurrent(SDL_Window *window, SDL_GLContext context, NVGcontext *vg)
 {
-    if (SDL_GL_MakeCurrent(window, context) != 0) { throw JSC::Exception(SDL_GetError()); }
+    if (SDL_GL_MakeCurrent(window, context) != 0) { throw std::runtime_error(SDL_GetError()); }
     _current_vg = vg;
 }
 

@@ -15,16 +15,16 @@ template <class T>
 inline void Type<T>::push(duk::Context &d, T const &value) {
     auto objIdx = duk_push_object(d);
     duk_push_pointer(d, const_cast<T*>(&value));
-    duk_put_prop_string(d, -2, "\xff" "obj_ptr");
+    duk_put_prop_string(d, -2, DUK_HIDDEN_SYMBOL("obj_ptr"));
     details::PushObjectInspector i(d, objIdx);
     Inspect<T>::inspect(i);
 }
 
 template <class T>
-inline void Type<T>::get(duk::Context &d, T &value, int objIdx) {
+inline void Type<T>::get(duk::Context &d, T &value, duk_idx_t objIdx) {
     static_assert(std::is_copy_constructible<T>::value, "object must be copy constructible");
 
-    duk_get_prop_string(d, objIdx, "\xff" "obj_ptr");
+    duk_get_prop_string(d, objIdx, DUK_HIDDEN_SYMBOL("obj_ptr"));
     T *obj = reinterpret_cast<T*>(duk_get_pointer(d, -1));
     duk_pop(d);
 

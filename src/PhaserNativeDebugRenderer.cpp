@@ -1,7 +1,7 @@
 #include "PhaserNativeDebugRenderer.h"
 #include "PhaserNativeGraphics.h"
-#include "JSC/JSCException.h"
 
+#include <stdexcept>
 
 #if defined(__linux__)
 #include <sys/sysinfo.h>
@@ -141,22 +141,22 @@ void PhaserNativeDebugRenderer::renderStats()
 
         fontIcons = nvgCreateFont(vg, "icons", "entypo.ttf");
         if (fontIcons == -1) {
-            throw JSC::Exception("Could not add font icons.");
+            throw std::runtime_error("Could not add font icons.");
         }
 
         fontNormal = nvgCreateFont(vg, "sans", "Roboto-Regular.ttf");
         if (fontNormal == -1) {
-            throw JSC::Exception("Could not add font italic.");
+            throw std::runtime_error("Could not add font italic.");
         }
 
         fontBold = nvgCreateFont(vg, "sans-bold", "Roboto-Bold.ttf");
         if (fontBold == -1) {
-            throw JSC::Exception("Could not add font bold.");
+            throw std::runtime_error("Could not add font bold.");
         }
 
         fontEmoji = nvgCreateFont(vg, "emoji", "NotoEmoji-Regular.ttf");
         if (fontEmoji == -1) {
-            throw JSC::Exception("Could not add font emoji.");
+            throw std::runtime_error("Could not add font emoji.");
         }
 
         nvgAddFallbackFontId(vg, fontNormal, fontEmoji);

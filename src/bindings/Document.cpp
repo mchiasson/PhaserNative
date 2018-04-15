@@ -1,56 +1,35 @@
 #include "Document.h"
+
 #include <SDL2/SDL_log.h>
 
-#include "DocumentElement.h"
 #include "HTMLCanvasElement.h"
-#include "Body.h"
+//#include "Body.h"
 
-JSC_CONSTRUCTOR(Document::Constructor)
-{
-    Document &document = CreateNativeInstance();
 
-    document.object.setProperty("body", Body::CreateJSObject({}));
-    document.object.setProperty("documentElement", DocumentElement::CreateJSObject({}));
-    document.object.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
+duk_ret_t Document::createElement(duk::Context &ctx, duk_idx_t nargs) {
 
-    return document.object;
-}
+    const char *tagName;
+    duk::Type<const char *>::get(ctx, tagName, 0);
 
-JSC_FINALIZER(Document::Finalizer)
-{
-    FreeNativeInstance(object);
-}
-
-JSC_FUNCTION(Document::createElement) {
-    std::string elementName = JSC::Value(argv[0]).toString().getUTF8String();
-    if (elementName == "canvas")
+    if (strcmp(tagName, "canvas") == 0)
     {
-        return HTMLCanvasElement::CreateJSObject({});
+        duk::Type< std::shared_ptr<HTMLCanvasElement> >::push(ctx, std::make_shared<HTMLCanvasElement>());
+        return 1;
     }
-    else
-    {
-        SDL_LogWarn(0, "Document.createElement('%s') is currently not supported.\n", elementName.c_str());
-        return JSC::Object::MakeDefault();
-    }
+
+
+    SDL_LogWarn(0, "Element type '%s' is currently not supported. Contact a Developer!\n", tagName);
+    duk_push_object(ctx);
+    return 1;
 }
 
-JSC::Class &Document::GetClassRef()
-{
-    if (!_class)
-    {
-        static JSStaticFunction staticFunctions[] = {
-            { "createElement", Document::createElement, kJSPropertyAttributeDontDelete },
-            { 0, 0, 0 }
-        };
-    
-        JSClassDefinition classDefinition = kJSClassDefinitionEmpty;
-        classDefinition.className = "Document";
-        classDefinition.attributes = kJSClassAttributeNone;
-        classDefinition.staticFunctions = staticFunctions;
-        classDefinition.callAsConstructor = Document::Constructor;
-        classDefinition.finalize = Document::Finalizer;
-        _class = JSC::Class(&classDefinition);
-    }
-    
-    return _class;
-}
+//JSC_CONSTRUCTOR(Document::Constructor)
+//{
+//    Document &document = CreateNativeInstance();
+
+//    document.object.setProperty("body", Body::CreateJSObject({}));
+//    document.object.setProperty("readyState", JSC::Value("complete")); // pretend the DOM is ready.
+
+//    return document.object;
+//}
+
