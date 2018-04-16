@@ -220,6 +220,7 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setCurrentTransform) {
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setDirection) {
    GetNativeInstance(object).m_direction = value;
+   SDL_Log("unimplemented setDirection('%s')\n", GetNativeInstance(object).m_direction.toString().getUTF8String().c_str());
    return true;
 }
 
@@ -265,7 +266,8 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle) {
                     end = last->second;
                 }
 
-                nvgRadialGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.r0, gradient.r1, start, end);
+                NVGpaint paint = nvgRadialGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.r0, gradient.r1, start, end);
+                nvgFillPaint(canvas2d.vg, paint);
             }
             else
             {
@@ -293,7 +295,8 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle) {
                     end = last->second;
                 }
 
-                nvgLinearGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.x1, gradient.y1, start, end);
+                NVGpaint paint = nvgLinearGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.x1, gradient.y1, start, end);
+                nvgFillPaint(canvas2d.vg, paint);
             }
         }
     }
@@ -303,6 +306,7 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle) {
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setFilter) {
   GetNativeInstance(object).m_filter = value;
+  SDL_Log("unimplemented setFilter('%s')\n", GetNativeInstance(object).m_direction.toString().getUTF8String().c_str());
   return true;
 }
 
@@ -326,12 +330,48 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setGlobalAlpha) {
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setGlobalCompositeOperation) {
-    GetNativeInstance(object).m_globalCompositeOperation = value;
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    if (canvas2d.m_globalCompositeOperation != value)
+    {
+        canvas2d.m_globalCompositeOperation = value;
+
+        std::string opStr = canvas2d.m_globalCompositeOperation.toString().getUTF8String();
+
+        if (opStr == "source-over") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_OVER);
+        } else if (opStr == "source-in") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_IN);
+        } else if (opStr == "source-out") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_OUT);
+        } else if (opStr == "source-atop") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_ATOP);
+        } else if (opStr == "destination-over") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_OVER);
+        } else if (opStr == "destination-in") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_IN);
+        } else if (opStr == "destination-out") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_OUT);
+        } else if (opStr == "destination-atop") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_ATOP);
+        } else if (opStr == "lighter") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_LIGHTER);
+        } else if (opStr == "copy") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_COPY);
+        } else if (opStr == "xor") {
+            nvgGlobalCompositeOperation(canvas2d.vg, NVG_XOR);
+        } else {
+            SDL_LogWarn(0, "globalCompositeOperation '%s' is not implemented. Contact a Developer!\n", opStr.c_str());
+        }
+    }
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setImageSmoothingEnabled) {
     GetNativeInstance(object).m_imageSmoothingEnabled = value;
+
     return true;
 }
 
@@ -341,7 +381,30 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setImageSmoothingQuality) {
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineCap) {
-    GetNativeInstance(object).m_lineCap = value;
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    if (canvas2d.m_lineCap != value)
+    {
+        canvas2d.m_lineCap = value;
+
+        std::string lineCap = canvas2d.m_lineCap.toString().getUTF8String();
+
+        if (lineCap == "butt")
+        {
+            nvgLineCap(canvas2d.vg, NVG_BUTT);
+        }
+        else if (lineCap == "round")
+        {
+            nvgLineCap(canvas2d.vg, NVG_ROUND);
+        }
+        else if (lineCap == "square")
+        {
+            nvgLineCap(canvas2d.vg, NVG_SQUARE);
+        }
+
+    }
     return true;
 }
 
@@ -351,17 +414,56 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineDashOffset) {
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineJoin) {
-   GetNativeInstance(object).m_lineJoin = value;
+
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    if (canvas2d.m_lineJoin != value)
+    {
+        canvas2d.m_lineJoin = value;
+
+        std::string lineJoin = canvas2d.m_lineJoin.toString().getUTF8String();
+
+        if (lineJoin == "miter")
+        {
+            nvgLineJoin(canvas2d.vg, NVG_MITER);
+        }
+        else if (lineJoin == "round")
+        {
+            nvgLineJoin(canvas2d.vg, NVG_ROUND);
+        }
+        else if (lineJoin == "bevel")
+        {
+            nvgLineJoin(canvas2d.vg, NVG_BEVEL);
+        }
+    }
    return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineWidth) {
-    GetNativeInstance(object).m_lineWidth = value;
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    if (canvas2d.m_lineWidth != value) {
+        canvas2d.m_lineWidth = value;
+        nvgStrokeWidth(canvas2d.vg, canvas2d.m_lineWidth.toFloat());
+    }
+
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setMiterLimit) {
-    GetNativeInstance(object).m_miterLimit = value;
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    if (canvas2d.m_miterLimit != value) {
+        canvas2d.m_miterLimit = value;
+        nvgMiterLimit(canvas2d.vg, canvas2d.m_miterLimit.toFloat());
+    }
+
     return true;
 }
 
@@ -386,20 +488,95 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setShadowOffsetY) {
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setStrokeStyle) {
-    GetNativeInstance(object).m_strokeStyle = value;
 
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
+    if (canvas2d.m_strokeStyle != value)
+    {
+        canvas2d.m_strokeStyle = value;
+
+        if (canvas2d.m_strokeStyle.isString())
+        {
+            nvgStrokeColor(canvas2d.vg, ColorUtil::stringToColor(canvas2d.m_strokeStyle.toString().getUTF8String()));
+        }
+        else if (canvas2d.m_strokeStyle.isObjectOfClass(CanvasGradient::GetClassRef()))
+        {
+            CanvasGradient &gradient = CanvasGradient::GetNativeInstance(canvas2d.m_strokeStyle);
+            if (gradient.isRadial)
+            {
+                NVGcolor start;
+                NVGcolor end;
+
+                auto first = gradient.colorStop.begin();
+                auto last = gradient.colorStop.rbegin();
+
+                if (first == gradient.colorStop.end())
+                {
+                    start = nvgRGBf(0, 0, 0);
+                }
+                else
+                {
+                    start = first->second;
+                }
+
+                if (last == gradient.colorStop.rend())
+                {
+                    end = nvgRGBf(1, 1, 1);
+                }
+                else
+                {
+                    end = last->second;
+                }
+
+                NVGpaint paint = nvgRadialGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.r0, gradient.r1, start, end);
+                nvgStrokePaint(canvas2d.vg, paint);
+            }
+            else
+            {
+                NVGcolor start;
+                NVGcolor end;
+
+                auto first = gradient.colorStop.begin();
+                auto last = gradient.colorStop.rbegin();
+
+                if (first == gradient.colorStop.end())
+                {
+                    start = nvgRGBf(0, 0, 0);
+                }
+                else
+                {
+                    start = first->second;
+                }
+
+                if (last == gradient.colorStop.rend())
+                {
+                    end = nvgRGBf(1, 1, 1);
+                }
+                else
+                {
+                    end = last->second;
+                }
+
+                NVGpaint paint = nvgLinearGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.x1, gradient.y1, start, end);
+                nvgStrokePaint(canvas2d.vg, paint);
+            }
+        }
+    }
 
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setTextAlign) {
     GetNativeInstance(object).m_textAlign = value;
+    SDL_Log("unimplemented setTextAlign('%s')\n", GetNativeInstance(object).m_textAlign.toString().getUTF8String().c_str());
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setTextBaseline) {
     GetNativeInstance(object).m_textBaseline = value;
+    SDL_Log("unimplemented setTextBaseline('%s')\n", GetNativeInstance(object).m_textBaseline.toString().getUTF8String().c_str());
     return true;
 }
 
