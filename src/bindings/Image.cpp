@@ -3,6 +3,7 @@
 #include <SDL2/SDL_log.h>
 #include <SDL2/SDL_events.h>
 #include "PhaserNativeEvent.h"
+#include "PhaserNativeGraphics.h"
 
 #include <thread>
 #include <stb/stb_image.h>
@@ -45,21 +46,31 @@ JSC_CONSTRUCTOR(Image::Constructor) {
 }
 
 JSC_FINALIZER(Image::Finalizer) {
-    stbi_image_free(GetNativeInstance(object).m_pixels);
+    Image &image = GetNativeInstance(object);
+
+    image.src = JSC::Value();
+
+    if (image.imageID)
+    {
+        NVGcontext *vg = PhaserNativeGetCurrentNanoVG();
+        nvgDeleteImage(vg, image.imageID);
+        image.imageID = 0;
+    }
+
     FreeNativeInstance(object);
 }
 
 JSC_PROPERTY_GET(Image::getSrc)
 {
-    return GetNativeInstance(object).m_src;
+    return GetNativeInstance(object).src;
 }
 
 JSC_PROPERTY_SET(Image::setSrc)
 {
      Image &instance = GetNativeInstance(object);
      instance.object.protect();
-     instance.m_src = value;
-     instance.m_src.protect();
+     instance.src = value;
+     instance.src.protect();
 
      std::thread t([object] {
 
@@ -68,9 +79,9 @@ JSC_PROPERTY_SET(Image::setSrc)
          ImageData *imageData = new ImageData();
          imageData->object = object;
 
-         if (image.m_src.isString())
+         if (image.src.isString())
          {
-             std::string src = image.m_src.toString().getUTF8String();
+             std::string src = image.src.toString().getUTF8String();
              std::string base64pngMarker = "data:image/png;base64,";
 
              if(src.compare(0, base64pngMarker.length(), base64pngMarker) == 0)
@@ -95,9 +106,9 @@ JSC_PROPERTY_SET(Image::setSrc)
                  fclose(imageFile);
              }
          }
-         else if (image.m_src.isObject())
+         else if (image.src.isObject())
          {
-             JSC::Object blob = image.m_src.toObject();
+             JSC::Object blob = image.src.toObject();
 
              JSC::Object arrayBuffer = blob.getProperty("_buffer").toObject();
 
@@ -109,7 +120,7 @@ JSC_PROPERTY_SET(Image::setSrc)
          {
              SDL_LogError(0, "Unsupported image source type. Contact a Developer!\n");
              delete imageData;
-             image.m_src.unprotect();
+             image.src.unprotect();
              image.object.unprotect();
              return;
          }
@@ -157,7 +168,7 @@ void Image::OnImageDecoded(void* ptr)
 
     Image &instance = GetNativeInstance(imageData->object);
     instance.object.setProperty("complete", JSC::Value(true));
-    instance.object.setProperty("currentSrc", instance.m_src);
+    instance.object.setProperty("currentSrc", instance.src);
     instance.object.setProperty("naturalWidth", JSC::Value(imageData->width));
     instance.object.setProperty("naturalHeight", JSC::Value(imageData->height));
 
@@ -171,7 +182,13 @@ void Image::OnImageDecoded(void* ptr)
         instance.object.setProperty("height", JSC::Value(imageData->height));
     }
 
-    instance.m_pixels = imageData->pixels;
+    NVGcontext *vg = PhaserNativeGetCurrentNanoVG();
+    instance.imageID = nvgCreateImageRGBA(vg,
+                                          imageData->width,
+                                          imageData->height,
+                                          0,
+                                          imageData->pixels);
+    stbi_image_free(imageData->pixels);
 
 
     JSC::Value onloadVal = instance.object.getProperty("onload");
@@ -184,7 +201,7 @@ void Image::OnImageDecoded(void* ptr)
         }
     }
 
-    instance.m_src.unprotect();
+    instance.src.unprotect();
     instance.object.unprotect();
 
     delete imageData;

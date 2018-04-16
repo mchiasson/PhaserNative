@@ -5,6 +5,8 @@
 
 // DOM/HTML5 object subs/wrappers/implementations
 #include "bindings/Body.h"
+#include "bindings/CanvasGradient.h"
+#include "bindings/CanvasPattern.h"
 #include "bindings/CanvasRenderingContext2D.h"
 #include "bindings/Console.h"
 #include "bindings/Document.h"
@@ -69,6 +71,8 @@ int PhaserNativeApp::run(int argc, char* argv[])
     // register constructors. Without them, users won't be able to 'new' them
     // from javascript.
     Body::RegisterClass();
+    CanvasGradient::RegisterClass();
+    CanvasPattern::RegisterClass();
     CanvasRenderingContext2D::RegisterClass();
     Console::RegisterClass();
     Document::RegisterClass();

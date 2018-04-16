@@ -45,6 +45,10 @@ add_executable(${PROJECT_NAME}
     ### Javascript Bindings
     src/bindings/Body.cpp
     src/bindings/Body.h
+    src/bindings/CanvasGradient.cpp
+    src/bindings/CanvasGradient.h
+    src/bindings/CanvasPattern.cpp
+    src/bindings/CanvasPattern.h
     src/bindings/CanvasRenderingContext2D.cpp
     src/bindings/CanvasRenderingContext2D.h
     src/bindings/Console.cpp

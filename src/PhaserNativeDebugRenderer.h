@@ -20,9 +20,6 @@ public:
 
 private:
 
-    SDL_GLContext context = nullptr;
-    NVGcontext *vg = nullptr;
-
     GPUtimer gpuTimer = {};
     PhaserNativeFPSPerfGraph fps;
     PhaserNativeMSPerfGraph cpuGraph;

@@ -568,15 +568,15 @@ JSC_FUNCTION(WebGLRenderingContext::texImage2D) {
     {
         if (image.object.hasProperty("width") && image.object.hasProperty("height"))
         {
-            phaserGLCheckErrorDebug( glTexImage2D(target,
-                                                  level,
-                                                  internalformat,
-                                                  image.object.getProperty("width"),
-                                                  image.object.getProperty("height"),
-                                                  0,
-                                                  format,
-                                                  type,
-                                                  image.m_pixels) );
+//            phaserGLCheckErrorDebug( glTexImage2D(target,
+//                                                  level,
+//                                                  internalformat,
+//                                                  image.object.getProperty("width"),
+//                                                  image.object.getProperty("height"),
+//                                                  0,
+//                                                  format,
+//                                                  type,
+//                                                  image.m_pixels) );
         }
 
     }
