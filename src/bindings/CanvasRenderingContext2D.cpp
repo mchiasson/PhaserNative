@@ -229,75 +229,72 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_fillStyle != value)
+    canvas2d.m_fillStyle = value;
+
+    if (canvas2d.m_fillStyle.isString())
     {
-        canvas2d.m_fillStyle = value;
+        nvgFillColor(canvas2d.vg, ColorUtil::stringToColor(canvas2d.m_fillStyle.toString().getUTF8String()));
+    }
+    else if (canvas2d.m_fillStyle.isObjectOfClass(CanvasGradient::GetClassRef()))
+    {
+        CanvasGradient &gradient = CanvasGradient::GetNativeInstance(canvas2d.m_fillStyle);
+        if (gradient.isRadial)
+        {
+            NVGcolor start;
+            NVGcolor end;
 
-        if (canvas2d.m_fillStyle.isString())
-        {
-            nvgFillColor(canvas2d.vg, ColorUtil::stringToColor(canvas2d.m_fillStyle.toString().getUTF8String()));
-        }
-        else if (canvas2d.m_fillStyle.isObjectOfClass(CanvasGradient::GetClassRef()))
-        {
-            CanvasGradient &gradient = CanvasGradient::GetNativeInstance(canvas2d.m_fillStyle);
-            if (gradient.isRadial)
+            auto first = gradient.colorStop.begin();
+            auto last = gradient.colorStop.rbegin();
+
+            if (first == gradient.colorStop.end())
             {
-                NVGcolor start;
-                NVGcolor end;
-
-                auto first = gradient.colorStop.begin();
-                auto last = gradient.colorStop.rbegin();
-
-                if (first == gradient.colorStop.end())
-                {
-                    start = nvgRGBf(0, 0, 0);
-                }
-                else
-                {
-                    start = first->second;
-                }
-
-                if (last == gradient.colorStop.rend())
-                {
-                    end = nvgRGBf(1, 1, 1);
-                }
-                else
-                {
-                    end = last->second;
-                }
-
-                NVGpaint paint = nvgRadialGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.r0, gradient.r1, start, end);
-                nvgFillPaint(canvas2d.vg, paint);
+                start = nvgRGBf(0, 0, 0);
             }
             else
             {
-                NVGcolor start;
-                NVGcolor end;
-
-                auto first = gradient.colorStop.begin();
-                auto last = gradient.colorStop.rbegin();
-
-                if (first == gradient.colorStop.end())
-                {
-                    start = nvgRGBf(0, 0, 0);
-                }
-                else
-                {
-                    start = first->second;
-                }
-
-                if (last == gradient.colorStop.rend())
-                {
-                    end = nvgRGBf(1, 1, 1);
-                }
-                else
-                {
-                    end = last->second;
-                }
-
-                NVGpaint paint = nvgLinearGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.x1, gradient.y1, start, end);
-                nvgFillPaint(canvas2d.vg, paint);
+                start = first->second;
             }
+
+            if (last == gradient.colorStop.rend())
+            {
+                end = nvgRGBf(1, 1, 1);
+            }
+            else
+            {
+                end = last->second;
+            }
+
+            NVGpaint paint = nvgRadialGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.r0, gradient.r1, start, end);
+            nvgFillPaint(canvas2d.vg, paint);
+        }
+        else
+        {
+            NVGcolor start;
+            NVGcolor end;
+
+            auto first = gradient.colorStop.begin();
+            auto last = gradient.colorStop.rbegin();
+
+            if (first == gradient.colorStop.end())
+            {
+                start = nvgRGBf(0, 0, 0);
+            }
+            else
+            {
+                start = first->second;
+            }
+
+            if (last == gradient.colorStop.rend())
+            {
+                end = nvgRGBf(1, 1, 1);
+            }
+            else
+            {
+                end = last->second;
+            }
+
+            NVGpaint paint = nvgLinearGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.x1, gradient.y1, start, end);
+            nvgFillPaint(canvas2d.vg, paint);
         }
     }
 
@@ -306,13 +303,23 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setFillStyle) {
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setFilter) {
   GetNativeInstance(object).m_filter = value;
-  SDL_Log("unimplemented setFilter('%s')\n", GetNativeInstance(object).m_direction.toString().getUTF8String().c_str());
+  SDL_Log("unimplemented setFilter('%s')\n", GetNativeInstance(object).m_filter.toString().getUTF8String().c_str());
   return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setFont) {
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
     GetNativeInstance(object).m_font = value;
-    SDL_Log("setFont('%s')\n", GetNativeInstance(object).m_font.toString().getUTF8String().c_str());
+
+    SDL_Log("unimplemented setFont('%s')\n", GetNativeInstance(object).m_font.toString().getUTF8String().c_str());
+
+    // TODO parse the actual m_font
+    nvgFontSize(canvas2d.vg, 48);
+    nvgFontFaceId(canvas2d.vg, canvas2d.fontNormal);
+
     return true;
 }
 
@@ -321,11 +328,8 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setGlobalAlpha) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_globalAlpha != value)
-    {
-        canvas2d.m_globalAlpha = value;
-        nvgGlobalAlpha(canvas2d.vg, canvas2d.m_globalAlpha.toFloat());
-    }
+    canvas2d.m_globalAlpha = value;
+    nvgGlobalAlpha(canvas2d.vg, canvas2d.m_globalAlpha.toFloat());
     return true;
 }
 
@@ -334,49 +338,48 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setGlobalCompositeOperation) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_globalCompositeOperation != value)
-    {
-        canvas2d.m_globalCompositeOperation = value;
+    canvas2d.m_globalCompositeOperation = value;
 
-        std::string opStr = canvas2d.m_globalCompositeOperation.toString().getUTF8String();
+    std::string opStr = canvas2d.m_globalCompositeOperation.toString().getUTF8String();
 
-        if (opStr == "source-over") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_OVER);
-        } else if (opStr == "source-in") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_IN);
-        } else if (opStr == "source-out") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_OUT);
-        } else if (opStr == "source-atop") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_ATOP);
-        } else if (opStr == "destination-over") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_OVER);
-        } else if (opStr == "destination-in") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_IN);
-        } else if (opStr == "destination-out") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_OUT);
-        } else if (opStr == "destination-atop") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_ATOP);
-        } else if (opStr == "lighter") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_LIGHTER);
-        } else if (opStr == "copy") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_COPY);
-        } else if (opStr == "xor") {
-            nvgGlobalCompositeOperation(canvas2d.vg, NVG_XOR);
-        } else {
-            SDL_LogWarn(0, "globalCompositeOperation '%s' is not implemented. Contact a Developer!\n", opStr.c_str());
-        }
+    if (opStr == "source-over") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_OVER);
+    } else if (opStr == "source-in") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_IN);
+    } else if (opStr == "source-out") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_SOURCE_OUT);
+    } else if (opStr == "source-atop") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_ATOP);
+    } else if (opStr == "destination-over") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_OVER);
+    } else if (opStr == "destination-in") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_IN);
+    } else if (opStr == "destination-out") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_OUT);
+    } else if (opStr == "destination-atop") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_DESTINATION_ATOP);
+    } else if (opStr == "lighter") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_LIGHTER);
+    } else if (opStr == "copy") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_COPY);
+    } else if (opStr == "xor") {
+        nvgGlobalCompositeOperation(canvas2d.vg, NVG_XOR);
+    } else {
+        SDL_LogWarn(0, "globalCompositeOperation '%s' is not implemented. Contact a Developer!\n", opStr.c_str());
     }
+
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setImageSmoothingEnabled) {
     GetNativeInstance(object).m_imageSmoothingEnabled = value;
-
+    SDL_Log("unimplemented setImageSmoothingEnabled('%s')\n", GetNativeInstance(object).m_imageSmoothingEnabled.toString().getUTF8String().c_str());
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setImageSmoothingQuality) {
     GetNativeInstance(object).m_imageSmoothingQuality = value;
+    SDL_Log("unimplemented setImageSmoothingQuality('%s')\n", GetNativeInstance(object).m_imageSmoothingQuality.toString().getUTF8String().c_str());
     return true;
 }
 
@@ -385,31 +388,29 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineCap) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_lineCap != value)
+    canvas2d.m_lineCap = value;
+
+    std::string lineCap = canvas2d.m_lineCap.toString().getUTF8String();
+
+    if (lineCap == "butt")
     {
-        canvas2d.m_lineCap = value;
-
-        std::string lineCap = canvas2d.m_lineCap.toString().getUTF8String();
-
-        if (lineCap == "butt")
-        {
-            nvgLineCap(canvas2d.vg, NVG_BUTT);
-        }
-        else if (lineCap == "round")
-        {
-            nvgLineCap(canvas2d.vg, NVG_ROUND);
-        }
-        else if (lineCap == "square")
-        {
-            nvgLineCap(canvas2d.vg, NVG_SQUARE);
-        }
-
+        nvgLineCap(canvas2d.vg, NVG_BUTT);
     }
+    else if (lineCap == "round")
+    {
+        nvgLineCap(canvas2d.vg, NVG_ROUND);
+    }
+    else if (lineCap == "square")
+    {
+        nvgLineCap(canvas2d.vg, NVG_SQUARE);
+    }
+
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineDashOffset) {
     GetNativeInstance(object).m_lineDashOffset = value;
+    SDL_Log("unimplemented setLineDashOffset('%s')\n", GetNativeInstance(object).m_lineDashOffset.toString().getUTF8String().c_str());
     return true;
 }
 
@@ -419,26 +420,24 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineJoin) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_lineJoin != value)
+    canvas2d.m_lineJoin = value;
+
+    std::string lineJoin = canvas2d.m_lineJoin.toString().getUTF8String();
+
+    if (lineJoin == "miter")
     {
-        canvas2d.m_lineJoin = value;
-
-        std::string lineJoin = canvas2d.m_lineJoin.toString().getUTF8String();
-
-        if (lineJoin == "miter")
-        {
-            nvgLineJoin(canvas2d.vg, NVG_MITER);
-        }
-        else if (lineJoin == "round")
-        {
-            nvgLineJoin(canvas2d.vg, NVG_ROUND);
-        }
-        else if (lineJoin == "bevel")
-        {
-            nvgLineJoin(canvas2d.vg, NVG_BEVEL);
-        }
+        nvgLineJoin(canvas2d.vg, NVG_MITER);
     }
-   return true;
+    else if (lineJoin == "round")
+    {
+        nvgLineJoin(canvas2d.vg, NVG_ROUND);
+    }
+    else if (lineJoin == "bevel")
+    {
+        nvgLineJoin(canvas2d.vg, NVG_BEVEL);
+    }
+
+    return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineWidth) {
@@ -446,10 +445,8 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setLineWidth) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_lineWidth != value) {
-        canvas2d.m_lineWidth = value;
-        nvgStrokeWidth(canvas2d.vg, canvas2d.m_lineWidth.toFloat());
-    }
+    canvas2d.m_lineWidth = value;
+    nvgStrokeWidth(canvas2d.vg, canvas2d.m_lineWidth.toFloat());
 
     return true;
 }
@@ -459,31 +456,34 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setMiterLimit) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_miterLimit != value) {
-        canvas2d.m_miterLimit = value;
-        nvgMiterLimit(canvas2d.vg, canvas2d.m_miterLimit.toFloat());
-    }
+    canvas2d.m_miterLimit = value;
+    nvgMiterLimit(canvas2d.vg, canvas2d.m_miterLimit.toFloat());
 
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setShadowBlur) {
     GetNativeInstance(object).m_shadowBlur = value;
+    SDL_Log("unimplemented setShadowBlur('%s')\n", GetNativeInstance(object).m_shadowBlur.toString().getUTF8String().c_str());
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setShadowColor) {
     GetNativeInstance(object).m_shadowColor = value;
+    SDL_Log("unimplemented setShadowColor('%s')\n", GetNativeInstance(object).m_shadowColor.toString().getUTF8String().c_str());
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setShadowOffsetX) {
    GetNativeInstance(object).m_shadowOffsetX = value;
+   SDL_Log("unimplemented setShadowOffsetX('%s')\n", GetNativeInstance(object).m_shadowOffsetX.toString().getUTF8String().c_str());
    return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setShadowOffsetY) {
     GetNativeInstance(object).m_shadowOffsetY = value;
+    SDL_Log("unimplemented setShadowOffsetY('%s')\n", GetNativeInstance(object).m_shadowOffsetY.toString().getUTF8String().c_str());
+
     return true;
 }
 
@@ -493,75 +493,72 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setStrokeStyle) {
     HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
     PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
 
-    if (canvas2d.m_strokeStyle != value)
+    canvas2d.m_strokeStyle = value;
+
+    if (canvas2d.m_strokeStyle.isString())
     {
-        canvas2d.m_strokeStyle = value;
+        nvgStrokeColor(canvas2d.vg, ColorUtil::stringToColor(canvas2d.m_strokeStyle.toString().getUTF8String()));
+    }
+    else if (canvas2d.m_strokeStyle.isObjectOfClass(CanvasGradient::GetClassRef()))
+    {
+        CanvasGradient &gradient = CanvasGradient::GetNativeInstance(canvas2d.m_strokeStyle);
+        if (gradient.isRadial)
+        {
+            NVGcolor start;
+            NVGcolor end;
 
-        if (canvas2d.m_strokeStyle.isString())
-        {
-            nvgStrokeColor(canvas2d.vg, ColorUtil::stringToColor(canvas2d.m_strokeStyle.toString().getUTF8String()));
-        }
-        else if (canvas2d.m_strokeStyle.isObjectOfClass(CanvasGradient::GetClassRef()))
-        {
-            CanvasGradient &gradient = CanvasGradient::GetNativeInstance(canvas2d.m_strokeStyle);
-            if (gradient.isRadial)
+            auto first = gradient.colorStop.begin();
+            auto last = gradient.colorStop.rbegin();
+
+            if (first == gradient.colorStop.end())
             {
-                NVGcolor start;
-                NVGcolor end;
-
-                auto first = gradient.colorStop.begin();
-                auto last = gradient.colorStop.rbegin();
-
-                if (first == gradient.colorStop.end())
-                {
-                    start = nvgRGBf(0, 0, 0);
-                }
-                else
-                {
-                    start = first->second;
-                }
-
-                if (last == gradient.colorStop.rend())
-                {
-                    end = nvgRGBf(1, 1, 1);
-                }
-                else
-                {
-                    end = last->second;
-                }
-
-                NVGpaint paint = nvgRadialGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.r0, gradient.r1, start, end);
-                nvgStrokePaint(canvas2d.vg, paint);
+                start = nvgRGBf(0, 0, 0);
             }
             else
             {
-                NVGcolor start;
-                NVGcolor end;
-
-                auto first = gradient.colorStop.begin();
-                auto last = gradient.colorStop.rbegin();
-
-                if (first == gradient.colorStop.end())
-                {
-                    start = nvgRGBf(0, 0, 0);
-                }
-                else
-                {
-                    start = first->second;
-                }
-
-                if (last == gradient.colorStop.rend())
-                {
-                    end = nvgRGBf(1, 1, 1);
-                }
-                else
-                {
-                    end = last->second;
-                }
-
-                NVGpaint paint = nvgLinearGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.x1, gradient.y1, start, end);
-                nvgStrokePaint(canvas2d.vg, paint);
+                start = first->second;
             }
+
+            if (last == gradient.colorStop.rend())
+            {
+                end = nvgRGBf(1, 1, 1);
+            }
+            else
+            {
+                end = last->second;
+            }
+
+            NVGpaint paint = nvgRadialGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.r0, gradient.r1, start, end);
+            nvgStrokePaint(canvas2d.vg, paint);
+        }
+        else
+        {
+            NVGcolor start;
+            NVGcolor end;
+
+            auto first = gradient.colorStop.begin();
+            auto last = gradient.colorStop.rbegin();
+
+            if (first == gradient.colorStop.end())
+            {
+                start = nvgRGBf(0, 0, 0);
+            }
+            else
+            {
+                start = first->second;
+            }
+
+            if (last == gradient.colorStop.rend())
+            {
+                end = nvgRGBf(1, 1, 1);
+            }
+            else
+            {
+                end = last->second;
+            }
+
+            NVGpaint paint = nvgLinearGradient(canvas2d.vg, gradient.x0, gradient.y0, gradient.x1, gradient.y1, start, end);
+            nvgStrokePaint(canvas2d.vg, paint);
         }
     }
 
@@ -569,14 +566,91 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setStrokeStyle) {
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setTextAlign) {
-    GetNativeInstance(object).m_textAlign = value;
-    SDL_Log("unimplemented setTextAlign('%s')\n", GetNativeInstance(object).m_textAlign.toString().getUTF8String().c_str());
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    canvas2d.m_textAlign = value;
+
+    std::string textAlignStr = canvas2d.m_textAlign.toString().getUTF8String();
+    std::string textBaselineStr = canvas2d.m_textBaseline.toString().getUTF8String();
+
+    int textAlign = 0;
+    int textBaseline = 0;
+
+    if (textAlignStr == "left") {
+        textAlign = NVG_ALIGN_LEFT;
+    } else if (textAlignStr == "right") {
+        textAlign = NVG_ALIGN_RIGHT;
+    } else if (textAlignStr == "center") {
+        textAlign = NVG_ALIGN_CENTER;
+    } else if (textAlignStr == "start") {
+        textAlign = NVG_ALIGN_LEFT;
+    } else if (textAlignStr == "end") {
+        textAlign = NVG_ALIGN_RIGHT;
+    }
+
+    if (textBaselineStr == "top") {
+        textBaseline = NVG_ALIGN_TOP;
+    } else if (textBaselineStr == "hanging") {
+        textBaseline = NVG_ALIGN_MIDDLE;
+    } else if (textBaselineStr == "middle") {
+        textBaseline = NVG_ALIGN_MIDDLE;
+    } else if (textBaselineStr == "alphabetic") {
+        textBaseline = NVG_ALIGN_BASELINE;
+    } else if (textBaselineStr == "ideographic") {
+        textBaseline = NVG_ALIGN_BOTTOM;
+    } else if (textBaselineStr == "bottom") {
+        textBaseline = NVG_ALIGN_BOTTOM;
+    }
+
+    nvgTextAlign(canvas2d.vg, textAlign | textBaseline);
+
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setTextBaseline) {
-    GetNativeInstance(object).m_textBaseline = value;
-    SDL_Log("unimplemented setTextBaseline('%s')\n", GetNativeInstance(object).m_textBaseline.toString().getUTF8String().c_str());
+
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    canvas2d.m_textBaseline = value;
+
+    std::string textAlignStr = canvas2d.m_textAlign.toString().getUTF8String();
+    std::string textBaselineStr = canvas2d.m_textBaseline.toString().getUTF8String();
+
+    int textAlign = 0;
+    int textBaseline = 0;
+
+    if (textAlignStr == "left") {
+        textAlign = NVG_ALIGN_LEFT;
+    } else if (textAlignStr == "right") {
+        textAlign = NVG_ALIGN_RIGHT;
+    } else if (textAlignStr == "center") {
+        textAlign = NVG_ALIGN_CENTER;
+    } else if (textAlignStr == "start") {
+        textAlign = NVG_ALIGN_LEFT;
+    } else if (textAlignStr == "end") {
+        textAlign = NVG_ALIGN_RIGHT;
+    }
+
+    if (textBaselineStr == "top") {
+        textBaseline = NVG_ALIGN_TOP;
+    } else if (textBaselineStr == "hanging") {
+        textBaseline = NVG_ALIGN_MIDDLE;
+    } else if (textBaselineStr == "middle") {
+        textBaseline = NVG_ALIGN_MIDDLE;
+    } else if (textBaselineStr == "alphabetic") {
+        textBaseline = NVG_ALIGN_BASELINE;
+    } else if (textBaselineStr == "ideographic") {
+        textBaseline = NVG_ALIGN_BOTTOM;
+    } else if (textBaselineStr == "bottom") {
+        textBaseline = NVG_ALIGN_BOTTOM;
+    }
+
+    nvgTextAlign(canvas2d.vg, textAlign | textBaseline);
+
     return true;
 }
 
