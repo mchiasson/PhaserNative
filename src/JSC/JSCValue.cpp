@@ -81,13 +81,13 @@ Value::Value(JSStringRef str) :
 
 }
 
-bool Value::operator==(const Value &other)
+bool Value::operator==(JSValueRef other)
 {
     // string means '===' in javascript
-    return JSValueIsStrictEqual(JSC_GLOBAL_CTX, m_value, other.m_value);
+    return JSValueIsStrictEqual(JSC_GLOBAL_CTX, m_value, m_value);
 }
 
-bool Value::operator!=(const Value &other)
+bool Value::operator!=(JSValueRef other)
 {
     return !operator==(other);
 }

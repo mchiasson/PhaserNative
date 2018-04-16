@@ -58,8 +58,8 @@ public:
         return *this;
     };
 
-    bool operator==(const Value &other);
-    bool operator!=(const Value &other);
+    bool operator==(JSValueRef other);
+    bool operator!=(JSValueRef other);
 
     operator JSValueRef() const;
 
