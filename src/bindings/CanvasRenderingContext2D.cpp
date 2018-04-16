@@ -63,6 +63,8 @@ JSC_CONSTRUCTOR(CanvasRenderingContext2D::Constructor) {
     nvgAddFallbackFontId(canvas2d.vg, canvas2d.fontNormal, canvas2d.fontEmoji);
     nvgAddFallbackFontId(canvas2d.vg, canvas2d.fontBold, canvas2d.fontEmoji);
 
+    canvas2d.object.setProperty("globalAlpha", 1.0f); // defautl value.
+
     return canvas2d.object;
 
 }
@@ -306,11 +308,20 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setFilter) {
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setFont) {
     GetNativeInstance(object).m_font = value;
+    SDL_Log("setFont('%s')\n", GetNativeInstance(object).m_font.toString().getUTF8String().c_str());
     return true;
 }
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setGlobalAlpha) {
-    GetNativeInstance(object).m_globalAlpha = value;
+    CanvasRenderingContext2D &canvas2d = GetNativeInstance(object);
+    HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(canvas2d.canvasIndex);
+    PhaserNativeMakeCurrent(canvas.window, canvas2d.context, canvas2d.vg);
+
+    if (canvas2d.m_globalAlpha != value)
+    {
+        canvas2d.m_globalAlpha = value;
+        nvgGlobalAlpha(canvas2d.vg, canvas2d.m_globalAlpha.toFloat());
+    }
     return true;
 }
 
@@ -376,6 +387,9 @@ JSC_PROPERTY_SET(CanvasRenderingContext2D::setShadowOffsetY) {
 
 JSC_PROPERTY_SET(CanvasRenderingContext2D::setStrokeStyle) {
     GetNativeInstance(object).m_strokeStyle = value;
+
+
+
     return true;
 }
 
