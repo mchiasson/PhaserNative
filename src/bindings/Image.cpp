@@ -50,12 +50,13 @@ JSC_FINALIZER(Image::Finalizer) {
 
     image.src = JSC::Value();
 
-    if (image.imageID)
+    if (image.pixels)
     {
-        NVGcontext *vg = PhaserNativeGetCurrentNanoVG();
-        nvgDeleteImage(vg, image.imageID);
-        image.imageID = 0;
+        stbi_image_free(image.pixels);
+        image.pixels = nullptr;
     }
+
+    image.imageID = 0;
 
     FreeNativeInstance(object);
 }
@@ -182,14 +183,7 @@ void Image::OnImageDecoded(void* ptr)
         instance.object.setProperty("height", JSC::Value(imageData->height));
     }
 
-    NVGcontext *vg = PhaserNativeGetCurrentNanoVG();
-    instance.imageID = nvgCreateImageRGBA(vg,
-                                          imageData->width,
-                                          imageData->height,
-                                          0,
-                                          imageData->pixels);
-    stbi_image_free(imageData->pixels);
-
+    instance.pixels = imageData->pixels;
 
     JSC::Value onloadVal = instance.object.getProperty("onload");
     if (onloadVal && onloadVal.isObject())

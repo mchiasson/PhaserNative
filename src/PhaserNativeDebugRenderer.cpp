@@ -46,6 +46,7 @@ PhaserNativeDebugRenderer::PhaserNativeDebugRenderer() :
 
 PhaserNativeDebugRenderer::~PhaserNativeDebugRenderer()
 {
+    PhaserNativeDestroyNanoVGContext(vg);
 }
 
 void PhaserNativeDebugRenderer::startProfiling() {
@@ -111,43 +112,37 @@ void PhaserNativeDebugRenderer::stopProfiling() {
 
 void PhaserNativeDebugRenderer::renderStats()
 {
-    NVGcontext *vg = PhaserNativeGetCurrentNanoVG();
+    if (!vg)
+    {
+        vg = PhaserNativeCreateNanoVGContext();
 
-    if (!vg) {
-        return;
+        fontIcons = nvgCreateFont(vg, "icons", "entypo.ttf");
+        if (fontIcons == -1) {
+            throw JSC::Exception("Could not add font icons.");
+        }
+
+        fontNormal = nvgCreateFont(vg, "sans", "Roboto-Regular.ttf");
+        if (fontNormal == -1) {
+            throw JSC::Exception("Could not add font italic.");
+        }
+
+        fontBold = nvgCreateFont(vg, "sans-bold", "Roboto-Bold.ttf");
+        if (fontBold == -1) {
+            throw JSC::Exception("Could not add font bold.");
+        }
+
+        fontEmoji = nvgCreateFont(vg, "emoji", "NotoEmoji-Regular.ttf");
+        if (fontEmoji == -1) {
+            throw JSC::Exception("Could not add font emoji.");
+        }
+
+        nvgAddFallbackFontId(vg, fontNormal, fontEmoji);
+        nvgAddFallbackFontId(vg, fontBold, fontEmoji);
+
+#if DRAW_GPU_TIME
+        initGPUTimer(&gpuTimer);
+#endif
     }
-
-//    if (!vg)
-//    {
-//        fontIcons = nvgCreateFont(vg, "icons", "entypo.ttf");
-//        if (fontIcons == -1) {
-//            throw JSC::Exception("Could not add font icons.");
-//        }
-
-//        fontNormal = nvgCreateFont(vg, "sans", "Roboto-Regular.ttf");
-//        if (fontNormal == -1) {
-//            throw JSC::Exception("Could not add font italic.");
-//        }
-
-//        fontBold = nvgCreateFont(vg, "sans-bold", "Roboto-Bold.ttf");
-//        if (fontBold == -1) {
-//            throw JSC::Exception("Could not add font bold.");
-//        }
-
-//        fontEmoji = nvgCreateFont(vg, "emoji", "NotoEmoji-Regular.ttf");
-//        if (fontEmoji == -1) {
-//            throw JSC::Exception("Could not add font emoji.");
-//        }
-
-//        nvgAddFallbackFontId(vg, fontNormal, fontEmoji);
-//        nvgAddFallbackFontId(vg, fontBold, fontEmoji);
-
-//#if DRAW_GPU_TIME
-//        initGPUTimer(&gpuTimer);
-//#endif
-//    }
-
-    nvgSave(vg);
 
     int perfGraphCursor = 5;
     fps.renderGraph(vg, perfGraphCursor, 5);
@@ -174,7 +169,5 @@ void PhaserNativeDebugRenderer::renderStats()
         perfGraphCursor += 205;
     }
 #endif
-
-    nvgRestore(vg);
 
 }

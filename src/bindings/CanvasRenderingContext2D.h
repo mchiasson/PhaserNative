@@ -104,8 +104,6 @@ public:
     static JSC_FUNCTION(transform);
     static JSC_FUNCTION(translate);
 
-    SDL_GLContext context = nullptr;
-    uint32_t vao = 0;
     size_t canvasIndex = 0;
 
     JSC::Value m_currentTransform;

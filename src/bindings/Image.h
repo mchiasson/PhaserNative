@@ -19,6 +19,7 @@ public:
     static JSC_PROPERTY_SET(setSrc);
 
     JSC::Value src;
+    uint8_t *pixels = nullptr;
     int imageID = 0;
 };
 

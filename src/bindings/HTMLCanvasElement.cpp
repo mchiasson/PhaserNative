@@ -11,15 +11,10 @@ JSC_CONSTRUCTOR(HTMLCanvasElement::Constructor) {
 
     HTMLCanvasElement &canvas = CreateNativeInstance();
 
-    canvas.window = PhaserNativeCreateWindow();
-
     return canvas.object;
 }
 
 JSC_FINALIZER(HTMLCanvasElement::Finalizer) {
-    HTMLCanvasElement &canvas = GetNativeInstance(object);
-    PhaserNativeDestroyWindow(canvas.window);
-    canvas.window = nullptr;
     FreeNativeInstance(object);
 }
 
@@ -127,13 +122,9 @@ JSC_FUNCTION(HTMLCanvasElement::removeEventListener)
 
 JSC_FUNCTION(HTMLCanvasElement::getBoundingClientRect) {
 
-    HTMLCanvasElement &canvas = GetNativeInstance(object);
-
-    int x, y;
-    SDL_GetWindowPosition(canvas.window, &x, &y);
-
+    int x = 0, y = 0;
     int w, h;
-    SDL_GetWindowSize(canvas.window, &w, &h);
+    SDL_GL_GetDrawableSize(SDL_GL_GetCurrentWindow(), &w, &h);
 
     JSC::Object rect = JSC::Object::MakeDefault();
     rect.setProperty("x", JSC::Value(x), kJSPropertyAttributeReadOnly);
@@ -150,41 +141,35 @@ JSC_FUNCTION(HTMLCanvasElement::getBoundingClientRect) {
 
 JSC_PROPERTY_GET(HTMLCanvasElement::getWidth)
 {
-    HTMLCanvasElement &canvas = GetNativeInstance(object);
-
     int w, h;
-    SDL_GetWindowSize(canvas.window, &w, &h);
+    SDL_GL_GetDrawableSize(SDL_GL_GetCurrentWindow(), &w, &h);
     return JSC::Value(w);
 }
 
 JSC_PROPERTY_SET(HTMLCanvasElement::setWidth)
 {
-    HTMLCanvasElement &canvas = GetNativeInstance(object);
-
-    int w, h;
-    SDL_GetWindowSize(canvas.window, &w, &h);
-    w = JSC::Value(value);
-    SDL_SetWindowSize(canvas.window, w, h);
+//    int w, h;
+//    SDL_GetWindowSize(SDL_GL_GetCurrentWindow(), &w, &h);
+//    w = JSC::Value(value);
+//    SDL_SetWindowSize(SDL_GL_GetCurrentWindow(), w, h);
     return JSC::Value::MakeUndefined();
 }
 
 JSC_PROPERTY_GET(HTMLCanvasElement::getHeight)
 {
-    HTMLCanvasElement &canvas = GetNativeInstance(object);
-
     int w, h;
-    SDL_GetWindowSize(canvas.window, &w, &h);
+    SDL_GetWindowSize(SDL_GL_GetCurrentWindow(), &w, &h);
     return JSC::Value(h);
 }
 
 JSC_PROPERTY_SET(HTMLCanvasElement::setHeight)
 {
-    HTMLCanvasElement &canvas = GetNativeInstance(object);
+//    HTMLCanvasElement &canvas = GetNativeInstance(object);
 
-    int w, h;
-    SDL_GetWindowSize(canvas.window, &w, &h);
-    h = JSC::Value(value);
-    SDL_SetWindowSize(canvas.window, w, h);
+//    int w, h;
+//    SDL_GetWindowSize(SDL_GL_GetCurrentWindow(), &w, &h);
+//    h = JSC::Value(value);
+//    SDL_SetWindowSize(SDL_GL_GetCurrentWindow(), w, h);
     return JSC::Value::MakeUndefined();
 }
 

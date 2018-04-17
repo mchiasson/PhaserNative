@@ -4,14 +4,15 @@
 
 #include "JSC/JSCException.h"
 
-#include <thread>
+#include <algorithm>
+#include <vector>
 
-static NVGcontext *_current_vg = nullptr;
+static SDL_Window *window = nullptr;
+static SDL_GLContext context = nullptr;
+static  std::vector<NVGcontext*> nvgs;
 
-SDL_Window* PhaserNativeCreateWindow()
+void PhaserNativeInit()
 {
-    SDL_Window *window = nullptr;
-
     uint32_t flags =
             SDL_WINDOW_OPENGL |
             SDL_WINDOW_HIDDEN |
@@ -49,58 +50,45 @@ SDL_Window* PhaserNativeCreateWindow()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+
     window = SDL_CreateWindow("PhaserNative",
                               SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED,
-                              0,
-                              0,
+                              1280,
+                              720,
                               flags);
 
-
-    if (window == nullptr)
+    if (!window)
     {
         throw JSC::Exception(SDL_GetError());
     }
 
-    return window;
-}
+    context = SDL_GL_CreateContext(window);
 
-void PhaserNativeDestroyWindow(SDL_Window *window)
-{
-    if (SDL_GL_MakeCurrent(nullptr, nullptr) != 0) {
-        throw JSC::Exception(SDL_GetError());
-    }
-    SDL_DestroyWindow(window);
-}
-
-SDL_GLContext PhaserNativeCreateGLContext(SDL_Window *window)
-{
-    SDL_GLContext context = SDL_GL_CreateContext(window);
-    if (!context) {
+    if (!context)
+    {
         throw JSC::Exception(SDL_GetError());
     }
 
-    static bool needGlInit = true;
-    if (needGlInit) {
-        phaserGLInit();
-        needGlInit = false;
-    }
+    phaserGLInit();
 
-    return context;
 }
 
-void PhaserNativeDestroyGLContext(SDL_GLContext context)
+void PhaserNativeShutdown()
 {
-    if (SDL_GL_MakeCurrent(nullptr, nullptr) != 0) {
-        throw JSC::Exception(SDL_GetError());
+    while(nvgs.size() > 0)
+    {
+        PhaserNativeDestroyNanoVGContext(nvgs.back());
     }
+
+    SDL_GL_MakeCurrent(nullptr, nullptr);
+
     SDL_GL_DeleteContext(context);
-}
+    context = nullptr;
 
-void PhaserNativeMakeCurrent(SDL_Window *window, SDL_GLContext context, NVGcontext *vg)
-{
-    if (SDL_GL_MakeCurrent(window, context) != 0) { throw JSC::Exception(SDL_GetError()); }
-    _current_vg = vg;
+    SDL_DestroyWindow(window);
+    window = nullptr;
 }
 
 NVGcontext* PhaserNativeCreateNanoVGContext()
@@ -129,7 +117,10 @@ NVGcontext* PhaserNativeCreateNanoVGContext()
     vg = nvgCreateGLES3(nvg_flags);
 #endif
 
-    _current_vg = vg;
+    if (vg)
+    {
+        nvgs.push_back(vg);
+    }
 
     return vg;
 }
@@ -137,45 +128,44 @@ NVGcontext* PhaserNativeCreateNanoVGContext()
 
 void PhaserNativeDestroyNanoVGContext(NVGcontext *vg)
 {
-    if (_current_vg == vg)
+    auto it = std::find(nvgs.begin(), nvgs.end(), vg);
+    if (it != nvgs.end())
     {
-        _current_vg = nullptr;
-    }
-
+        nvgs.erase(it);
 #ifdef NANOVG_GL2_IMPLEMENTATION
-    nvgDeleteGL2(vg);
+        nvgDeleteGL2(vg);
 #elif defined(NANOVG_GL3_IMPLEMENTATION)
-    nvgDeleteGL3(vg);
+        nvgDeleteGL3(vg);
 #elif defined(NANOVG_GLES2_IMPLEMENTATION)
-    nvgDeleteGLES2(vg);
+        nvgDeleteGLES2(vg);
 #elif defined(NANOVG_GLES3_IMPLEMENTATION)
-    nvgDeleteGLES3(vg);
+        nvgDeleteGLES3(vg);
 #endif
-}
-
-NVGcontext *PhaserNativeGetCurrentNanoVG()
-{
-    return _current_vg;
+    }
 }
 
 void PhaserNativeBeginFrame()
 {
-    if (_current_vg)
+    int width, height;
+    SDL_GetWindowSize(window, &width, &height);
+
+    int fbWidth, fbHeight;
+    SDL_GL_GetDrawableSize(window, &fbWidth, &fbHeight);
+
+    float devicePixelRatio = width / (float) fbWidth;
+
+    for (size_t i = 0; i < nvgs.size(); ++i)
     {
-        int width, height;
-        SDL_GetWindowSize(SDL_GL_GetCurrentWindow(), &width, &height);
-
-        int fbWidth, fbHeight;
-        SDL_GL_GetDrawableSize(SDL_GL_GetCurrentWindow(), &fbWidth, &fbHeight);
-
-        nvgBeginFrame(_current_vg, width, height,  fbWidth / (float) width);
+        nvgBeginFrame(nvgs[i], width, height, devicePixelRatio);
     }
 }
 
 void PhaserNativeEndFrame()
 {
-    if (_current_vg)
+    for (size_t i = 0; i < nvgs.size(); ++i)
     {
-        nvgEndFrame(_current_vg);
+        nvgEndFrame(nvgs[i]);
     }
+
+    SDL_GL_SwapWindow(window);
 }

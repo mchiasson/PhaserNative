@@ -153,8 +153,12 @@ JSC_FUNCTION(Window::requestAnimationFrame)
 
 void Window::OnRequestAnimationFrame(void* ptr, double timestamp)
 {
-    JSC::Object callbcack = JSC::Object((JSObjectRef)ptr);
-    callbcack.callAsFunction({JSC::Value(timestamp)});
+    try {
+        JSC::Object callbcack = JSC::Object((JSObjectRef)ptr);
+        callbcack.callAsFunction({JSC::Value(timestamp)});
+    } catch (std::exception &e) {
+        SDL_LogError(0, "%s\n", e.what());
+    }
 }
 
 

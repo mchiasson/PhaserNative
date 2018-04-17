@@ -21,8 +21,7 @@ JSC_FUNCTION(Body::appendChild) {
     JSC::Value child = JSC::Value(argv[0]);
 
     if (child.isObjectOfClass(HTMLCanvasElement::GetClassRef())) {
-        HTMLCanvasElement &canvas = HTMLCanvasElement::GetNativeInstance(child.toObject());
-        SDL_ShowWindow(canvas.window);
+        SDL_ShowWindow(SDL_GL_GetCurrentWindow());
     }
 
     Body &body = GetNativeInstance(object);

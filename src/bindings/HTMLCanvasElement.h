@@ -22,8 +22,6 @@ public:
     static JSC_PROPERTY_GET(getHeight);
     static JSC_PROPERTY_SET(setHeight);
 
-    SDL_Window *window = nullptr;
-
     size_t canvas2dIndex = 0;
     size_t glIndex = 0;
 };

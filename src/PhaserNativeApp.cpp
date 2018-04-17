@@ -34,6 +34,8 @@ PhaserNativeApp::PhaserNativeApp()
         throw JSC::Exception(SDL_GetError());
     }
 
+    PhaserNativeInit();
+
     PhaserNativeEvent::Timeout = SDL_RegisterEvents(1);
     PhaserNativeEvent::ImageDecoded = SDL_RegisterEvents(1);
     PhaserNativeEvent::RequestAnimationFrame = SDL_RegisterEvents(1);
@@ -41,6 +43,9 @@ PhaserNativeApp::PhaserNativeApp()
 
 PhaserNativeApp::~PhaserNativeApp()
 {
+
+    PhaserNativeShutdown();
+
     for(auto &gameDevice : m_gameDevices)
     {
         SDL_GameControllerClose(gameDevice.gameController);
@@ -108,14 +113,12 @@ int PhaserNativeApp::run(int argc, char* argv[])
 
     m_running = true;
 
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(processEvent, 0, 1);
-#else
     while(m_running)
     {
         processEvent();
     }
-#endif
+
+    JSC::GlobalContext::DestroyInstance();
 
     return rc;
 }
@@ -262,14 +265,6 @@ void PhaserNativeApp::processEvent()
                 m_debugRenderer.stopProfiling();
                 m_debugRenderer.renderStats();
                 PhaserNativeEndFrame();
-
-                SDL_Window *window = SDL_GL_GetCurrentWindow();
-
-                if (window)
-                {
-                    SDL_GL_SwapWindow(window);
-                }
-
             }
             else if (e.type == PhaserNativeEvent::XHR)
             {

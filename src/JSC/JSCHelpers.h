@@ -8,7 +8,7 @@
 
 #include <boost/type_index.hpp>
 
-#define JSC_GLOBAL_CTX JSC::GlobalContext::GetNativeInstance()
+#define JSC_GLOBAL_CTX JSC::GlobalContext::GetInstance()
 #define JSC_GLOBAL_OBJECT JSC::Object::GetGlobalObject()
 
 #define JSC_CONSTRUCTOR(_CONSTRUCTOR_NAME_) \

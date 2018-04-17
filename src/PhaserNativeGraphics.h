@@ -10,18 +10,11 @@
 
 #include <SDL2/SDL.h>
 
-SDL_Window* PhaserNativeCreateWindow();
-void PhaserNativeDestroyWindow(SDL_Window *window);
-
-SDL_GLContext PhaserNativeCreateGLContext(SDL_Window* window);
-void PhaserNativeDestroyGLContext(SDL_GLContext context);
-
-void PhaserNativeMakeCurrent(SDL_Window *window, SDL_GLContext context, NVGcontext *vg);
+void PhaserNativeInit();
+void PhaserNativeShutdown();
 
 NVGcontext* PhaserNativeCreateNanoVGContext();
 void PhaserNativeDestroyNanoVGContext(NVGcontext *vg);
-
-NVGcontext *PhaserNativeGetCurrentNanoVG();
 
 void PhaserNativeBeginFrame();
 void PhaserNativeEndFrame();

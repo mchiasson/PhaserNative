@@ -20,6 +20,8 @@ public:
 
 private:
 
+    NVGcontext *vg = nullptr;
+
     GPUtimer gpuTimer = {};
     PhaserNativeFPSPerfGraph fps;
     PhaserNativeMSPerfGraph cpuGraph;

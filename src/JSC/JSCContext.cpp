@@ -3,9 +3,21 @@
 namespace JSC
 {
 
-GlobalContext &GlobalContext::GetNativeInstance() {
-    static GlobalContext context;
-    return context;
+GlobalContext *GlobalContext::context = nullptr;
+
+GlobalContext &GlobalContext::GetInstance() {
+    if (!context)
+    {
+        context = new GlobalContext();
+    }
+
+    return *context;
+}
+
+void GlobalContext::DestroyInstance()
+{
+    delete context;
+    context = nullptr;
 }
 
 GlobalContext::GlobalContext() :
